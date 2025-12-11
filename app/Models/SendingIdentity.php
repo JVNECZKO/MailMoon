@@ -22,12 +22,19 @@ class SendingIdentity extends Model
         'smtp_username',
         'smtp_password',
         'smtp_encryption',
+        'send_mode',
+        'imap_host',
+        'imap_port',
+        'imap_username',
+        'imap_password',
+        'imap_encryption',
         'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'smtp_password' => 'encrypted',
+        'imap_password' => 'encrypted',
     ];
 
     public function campaigns(): HasMany

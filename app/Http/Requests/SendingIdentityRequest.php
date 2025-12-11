@@ -32,6 +32,12 @@ class SendingIdentityRequest extends FormRequest
             'smtp_password' => [$passwordRule, 'string'],
             'smtp_encryption' => ['nullable', 'string', 'max:10'],
             'is_active' => ['sometimes', 'boolean'],
+            'send_mode' => ['required', 'in:smtp,imap'],
+            'imap_host' => ['nullable', 'string', 'max:255'],
+            'imap_port' => ['nullable', 'integer', 'min:1'],
+            'imap_username' => ['nullable', 'string', 'max:255'],
+            'imap_password' => ['nullable', 'string'],
+            'imap_encryption' => ['nullable', 'string', 'max:10'],
         ];
     }
 }

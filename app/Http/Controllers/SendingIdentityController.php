@@ -34,6 +34,7 @@ class SendingIdentityController extends Controller
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
         $data['is_active'] = $request->boolean('is_active');
+        $data['imap_password'] = $data['imap_password'] ?? null;
 
         SendingIdentity::create($data);
 
@@ -57,6 +58,9 @@ class SendingIdentityController extends Controller
 
         if (blank($data['smtp_password'])) {
             unset($data['smtp_password']);
+        }
+        if (blank($data['imap_password'])) {
+            unset($data['imap_password']);
         }
 
         $sendingIdentity->update($data);

@@ -146,7 +146,13 @@ class CampaignSenderService
             ->subject($campaign->subject)
             ->html($html);
 
-        return $transport->send($email);
+        $sentMessage = $transport->send($email);
+
+        if ($identity->send_mode === 'imap') {
+            $this->appendToImapSent($identity, $email);
+        }
+
+        return $sentMessage;
     }
 
     private function prepareHtml(Campaign $campaign, CampaignMessage $message): string
@@ -278,5 +284,41 @@ class CampaignSenderService
         }
 
         return false;
+    }
+
+    private function appendToImapSent(SendingIdentity $identity, Email $email): void
+    {
+        try {
+            if (! function_exists('imap_open')) {
+                return;
+            }
+
+            $host = $identity->imap_host ?? $identity->smtp_host;
+            $port = $identity->imap_port ?? 993;
+            $encryption = $identity->imap_encryption ?: 'ssl';
+            $username = $identity->imap_username ?? $identity->smtp_username;
+            $password = $identity->imap_password ?? $identity->smtp_password;
+
+            if (! $host || ! $username || ! $password) {
+                return;
+            }
+
+            $mailbox = sprintf('{%s:%d/imap/%s}Sent', $host, $port, $encryption === 'tls' ? 'tls' : 'ssl');
+            $stream = @imap_open($mailbox, $username, $password);
+
+            if (! $stream) {
+                return;
+            }
+
+            $rawMessage = $email->toString();
+
+            @imap_append($stream, $mailbox, $rawMessage);
+            @imap_close($stream);
+        } catch (\Throwable $e) {
+            Log::warning('IMAP append failed', [
+                'identity_id' => $identity->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
