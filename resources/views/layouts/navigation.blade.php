@@ -15,7 +15,7 @@
                     <a href="{{ route('templates.index') }}" class="{{ $linkClasses(request()->routeIs('templates.*')) }}">Szablony</a>
                     <a href="{{ route('contact-lists.index') }}" class="{{ $linkClasses(request()->routeIs('contact-lists.*') || request()->routeIs('contact-lists.contacts.*')) }}">Listy kontaktów</a>
                     <a href="{{ route('sending-identities.index') }}" class="{{ $linkClasses(request()->routeIs('sending-identities.*')) }}">Tożsamości</a>
-                    <a href="{{ route('settings.cron') }}" class="{{ $linkClasses(request()->routeIs('warming.*')) }}">Warming</a>
+                    <a href="{{ route('sending-identities.index') }}" class="{{ $linkClasses(request()->routeIs('warming.*')) }}">Warming</a>
                     <a href="{{ route('settings.cron') }}" class="{{ $linkClasses(request()->routeIs('settings.*')) }}">Ustawienia</a>
                 </div>
             </div>
@@ -47,7 +47,7 @@
             <a href="{{ route('templates.index') }}" class="block px-2 py-2 {{ request()->routeIs('templates.*') ? 'text-blue-700 font-semibold' : 'text-slate-700' }}">Szablony</a>
             <a href="{{ route('contact-lists.index') }}" class="block px-2 py-2 {{ request()->routeIs('contact-lists.*') || request()->routeIs('contact-lists.contacts.*') ? 'text-blue-700 font-semibold' : 'text-slate-700' }}">Listy kontaktów</a>
             <a href="{{ route('sending-identities.index') }}" class="block px-2 py-2 {{ request()->routeIs('sending-identities.*') ? 'text-blue-700 font-semibold' : 'text-slate-700' }}">Tożsamości</a>
-            <a href="{{ route('settings.cron') }}" class="block px-2 py-2 {{ request()->routeIs('warming.*') ? 'text-blue-700 font-semibold' : 'text-slate-700' }}">Warming</a>
+            <a href="{{ route('sending-identities.index') }}" class="block px-2 py-2 {{ request()->routeIs('warming.*') ? 'text-blue-700 font-semibold' : 'text-slate-700' }}">Warming</a>
             <a href="{{ route('settings.cron') }}" class="block px-2 py-2 {{ request()->routeIs('settings.*') ? 'text-blue-700 font-semibold' : 'text-slate-700' }}">Ustawienia</a>
             <a href="{{ route('profile.edit') }}" class="block px-2 py-2 text-slate-700">Profil</a>
         </div>
