@@ -67,8 +67,10 @@ class CampaignSenderService
                     break;
                 }
 
-                $html = $this->prepareHtml($campaign, $message);
-                $sentMessage = $this->sendEmail($transport, $campaign, $message, $html);
+                $subject = $this->pickSubject($campaign);
+                $baseHtml = $this->pickContent($campaign);
+                $html = $this->prepareHtml($campaign, $message, $baseHtml);
+                $sentMessage = $this->sendEmail($transport, $campaign, $message, $subject, $html);
 
                 $message->update([
                     'sent_at' => now(),
@@ -85,7 +87,13 @@ class CampaignSenderService
                 ]);
             }
 
-            sleep(max(0, (int) $campaign->send_interval_seconds));
+            $min = max(0, (int) $campaign->send_interval_seconds);
+            $max = max($min, (int) ($campaign->send_interval_max_seconds ?? $min));
+            $delay = $min === $max ? $min : random_int($min, $max);
+
+            if ($delay > 0) {
+                sleep($delay);
+            }
         }
 
         if (!$rescheduled) {
@@ -136,14 +144,14 @@ class CampaignSenderService
         return $transport;
     }
 
-    private function sendEmail(TransportInterface $transport, Campaign $campaign, CampaignMessage $message, string $html): ?SentMessage
+    private function sendEmail(TransportInterface $transport, Campaign $campaign, CampaignMessage $message, string $subject, string $html): ?SentMessage
     {
         $identity = $campaign->sendingIdentity;
 
         $email = (new Email())
             ->from(new Address($identity->from_email, $identity->name))
             ->to($message->to_email)
-            ->subject($campaign->subject)
+            ->subject($subject)
             ->html($html);
 
         $sentMessage = $transport->send($email);
@@ -155,10 +163,8 @@ class CampaignSenderService
         return $sentMessage;
     }
 
-    private function prepareHtml(Campaign $campaign, CampaignMessage $message): string
+    private function prepareHtml(Campaign $campaign, CampaignMessage $message, string $html): string
     {
-        $html = $campaign->html_content;
-
         if ($campaign->track_clicks) {
             $html = $this->rewriteLinks($html, $message);
         }
@@ -186,6 +192,34 @@ class CampaignSenderService
         }
 
         return $html;
+    }
+
+    private function pickSubject(Campaign $campaign): string
+    {
+        $subjects = array_values(array_filter([
+            $campaign->subject,
+            ...($campaign->extra_subjects ?? []),
+        ]));
+
+        if (empty($subjects)) {
+            return $campaign->subject;
+        }
+
+        return $subjects[array_rand($subjects)];
+    }
+
+    private function pickContent(Campaign $campaign): string
+    {
+        $contents = array_values(array_filter([
+            $campaign->html_content,
+            ...($campaign->extra_contents ?? []),
+        ]));
+
+        if (empty($contents)) {
+            return $campaign->html_content;
+        }
+
+        return $contents[array_rand($contents)];
     }
 
     private function rewriteLinks(string $html, CampaignMessage $message): string

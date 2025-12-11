@@ -21,11 +21,14 @@ class Campaign extends Model
         'template_id',
         'name',
         'subject',
+        'extra_subjects',
         'html_content',
+        'extra_contents',
         'track_opens',
         'track_clicks',
         'enable_unsubscribe',
         'send_interval_seconds',
+        'send_interval_max_seconds',
         'status',
         'scheduled_at',
         'sending_window_enabled',
@@ -40,10 +43,13 @@ class Campaign extends Model
         'enable_unsubscribe' => 'boolean',
         'scheduled_at' => 'datetime',
         'send_interval_seconds' => 'integer',
+        'send_interval_max_seconds' => 'integer',
         'sending_window_enabled' => 'boolean',
         'sending_window_start' => 'string',
         'sending_window_end' => 'string',
         'sending_window_schedule' => 'array',
+        'extra_subjects' => 'array',
+        'extra_contents' => 'array',
     ];
 
     public function sendingIdentity(): BelongsTo

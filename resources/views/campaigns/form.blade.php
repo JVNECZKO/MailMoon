@@ -6,9 +6,22 @@
         <label class="block text-sm font-medium text-slate-700">Nazwa kampanii</label>
         <input type="text" name="name" value="{{ old('name', $campaign->name ?? '') }}" class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" required>
     </div>
+    @php
+        $extraSubjects = old('extra_subjects', $campaign->extra_subjects ?? []);
+        $extraContents = old('extra_contents', $campaign->extra_contents ?? []);
+    @endphp
     <div>
-        <label class="block text-sm font-medium text-slate-700">Temat e-mail</label>
+        <div class="flex items-center justify-between">
+            <label class="block text-sm font-medium text-slate-700">Temat e-mail</label>
+            <button type="button" id="open-subject-modal" class="flex items-center text-xs text-blue-700 hover:underline">
+                + Dodaj więcej tematów
+            </button>
+        </div>
         <input type="text" name="subject" value="{{ old('subject', $campaign->subject ?? '') }}" class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" required>
+        <p class="text-xs text-slate-500 mt-1">Możesz dodać wiele tematów dla zwiększenia dostarczalności. Losujemy temat dla każdego odbiorcy.</p>
+        @if(!empty($extraSubjects))
+            <p class="mt-1 text-xs text-blue-700 font-semibold">Dodatkowe tematy: {{ count($extraSubjects) }} (edytuj w oknie zarządzania)</p>
+        @endif
     </div>
     <div>
         <label class="block text-sm font-medium text-slate-700">Tożsamość nadawcy</label>
@@ -45,8 +58,12 @@
     </div>
     <div class="grid grid-cols-2 gap-3">
         <div>
-            <label class="block text-sm font-medium text-slate-700">Odstęp między wysyłkami (s)</label>
-            <input type="number" min="1" name="send_interval_seconds" value="{{ old('send_interval_seconds', $campaign->send_interval_seconds ?? 1) }}" class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" required>
+            <label class="block text-sm font-medium text-slate-700">Odstęp między wysyłkami (sekundy)</label>
+            <div class="mt-1 grid grid-cols-2 gap-2">
+                <input type="number" min="1" name="send_interval_seconds" value="{{ old('send_interval_seconds', $campaign->send_interval_seconds ?? 1) }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" required placeholder="Od">
+                <input type="number" min="1" name="send_interval_max_seconds" value="{{ old('send_interval_max_seconds', $campaign->send_interval_max_seconds ?? ($campaign->send_interval_seconds ?? 1)) }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Do">
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Losowy odstęp w zadanym przedziale dla każdej wiadomości.</p>
         </div>
         <div>
             <label class="block text-sm font-medium text-slate-700">Data zaplanowania</label>
@@ -136,6 +153,104 @@
 </div>
 
 <div class="mt-4">
-    <label class="block text-sm font-medium text-slate-700">Treść kampanii</label>
+    <div class="flex items-center justify-between">
+        <label class="block text-sm font-medium text-slate-700">Treść kampanii</label>
+        <button type="button" id="open-content-modal" class="flex items-center text-xs text-blue-700 hover:underline">
+            + Dodaj kolejne treści
+        </button>
+    </div>
     <textarea name="html_content" class="tinymce-editor mt-1 w-full rounded-md border-slate-300 shadow-sm" rows="14">{{ old('html_content', $campaign->html_content ?? '') }}</textarea>
+    <p class="text-xs text-slate-500 mt-1">Wiele wariantów treści zwiększa dostarczalność – losujemy wariant per odbiorca.</p>
+    @if(!empty($extraContents))
+        <p class="mt-1 text-xs text-blue-700 font-semibold">Dodatkowe treści: {{ count($extraContents) }} (edytuj w oknie zarządzania)</p>
+    @endif
 </div>
+
+{{-- Modale zarządzania wariantami --}}
+<div id="subject-modal" class="fixed inset-0 bg-black/40 z-40 hidden">
+    <div class="mx-auto mt-16 max-w-2xl rounded-xl bg-white p-6 shadow-lg">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-slate-900">Dodatkowe tematy</h3>
+            <button type="button" data-close-subject class="text-slate-500 hover:text-slate-700 text-sm">Zamknij</button>
+        </div>
+        <p class="text-sm text-slate-600 mt-1">Dodaj kilka tematów — system wylosuje jeden dla każdego maila.</p>
+        <div id="subject-variants" class="mt-4 space-y-3">
+            @foreach($extraSubjects as $idx => $subject)
+                <input type="text" name="extra_subjects[]" value="{{ $subject }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Temat #{{ $idx + 1 }}">
+            @endforeach
+        </div>
+        <div class="mt-4 flex items-center justify-between">
+            <button type="button" id="add-subject-variant" class="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">+ Dodaj temat</button>
+            <button type="button" data-close-subject class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-800">Gotowe</button>
+        </div>
+    </div>
+</div>
+
+<div id="content-modal" class="fixed inset-0 bg-black/40 z-40 hidden">
+    <div class="mx-auto mt-16 max-w-3xl rounded-xl bg-white p-6 shadow-lg">
+        <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-slate-900">Dodatkowe treści</h3>
+            <button type="button" data-close-content class="text-slate-500 hover:text-slate-700 text-sm">Zamknij</button>
+        </div>
+        <p class="text-sm text-slate-600 mt-1">Możesz wprowadzić prosty HTML lub tekst. Losujemy jedną treść dla każdego odbiorcy.</p>
+        <div id="content-variants" class="mt-4 space-y-3">
+            @foreach($extraContents as $idx => $content)
+                <textarea name="extra_contents[]" rows="3" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Treść #{{ $idx + 1 }}">{{ $content }}</textarea>
+            @endforeach
+        </div>
+        <div class="mt-4 flex items-center justify-between">
+            <button type="button" id="add-content-variant" class="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">+ Dodaj treść</button>
+            <button type="button" data-close-content class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-800">Gotowe</button>
+        </div>
+    </div>
+</div>
+
+@once
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                const modalToggle = (id, show) => {
+                    const el = document.getElementById(id);
+                    if (!el) return;
+                    el.classList.toggle('hidden', !show);
+                };
+
+                // Tematy
+                const openSubject = document.getElementById('open-subject-modal');
+                const subjectModal = document.getElementById('subject-modal');
+                const addSubject = document.getElementById('add-subject-variant');
+                const subjectWrap = document.getElementById('subject-variants');
+                openSubject?.addEventListener('click', () => modalToggle('subject-modal', true));
+                subjectModal?.querySelectorAll('[data-close-subject]')?.forEach((btn) => {
+                    btn.addEventListener('click', () => modalToggle('subject-modal', false));
+                });
+                addSubject?.addEventListener('click', () => {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = 'extra_subjects[]';
+                    input.placeholder = `Temat #${(subjectWrap?.children.length || 0) + 1}`;
+                    input.className = 'w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500';
+                    subjectWrap?.appendChild(input);
+                });
+
+                // Treści
+                const openContent = document.getElementById('open-content-modal');
+                const contentModal = document.getElementById('content-modal');
+                const addContent = document.getElementById('add-content-variant');
+                const contentWrap = document.getElementById('content-variants');
+                openContent?.addEventListener('click', () => modalToggle('content-modal', true));
+                contentModal?.querySelectorAll('[data-close-content]')?.forEach((btn) => {
+                    btn.addEventListener('click', () => modalToggle('content-modal', false));
+                });
+                addContent?.addEventListener('click', () => {
+                    const area = document.createElement('textarea');
+                    area.name = 'extra_contents[]';
+                    area.rows = 3;
+                    area.placeholder = `Treść #${(contentWrap?.children.length || 0) + 1}`;
+                    area.className = 'w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500';
+                    contentWrap?.appendChild(area);
+                });
+            });
+        </script>
+    @endpush
+@endonce

@@ -28,11 +28,16 @@ class CampaignRequest extends FormRequest
             'contact_list_id' => ['required', 'exists:contact_lists,id'],
             'template_id' => ['nullable', 'exists:templates,id'],
             'subject' => ['required', 'string', 'max:255'],
+            'extra_subjects' => ['sometimes', 'array'],
+            'extra_subjects.*' => ['nullable', 'string', 'max:255'],
             'html_content' => ['required', 'string'],
+            'extra_contents' => ['sometimes', 'array'],
+            'extra_contents.*' => ['nullable', 'string'],
             'track_opens' => ['sometimes', 'boolean'],
             'track_clicks' => ['sometimes', 'boolean'],
             'enable_unsubscribe' => ['sometimes', 'boolean'],
             'send_interval_seconds' => ['required', 'integer', 'min:1'],
+            'send_interval_max_seconds' => ['nullable', 'integer', 'min:1'],
             'status' => ['nullable', Rule::in(['draft', 'scheduled', 'sending', 'sent', 'failed'])],
             'scheduled_at' => ['nullable', 'date'],
             'sending_window_enabled' => ['sometimes', 'boolean'],
@@ -84,6 +89,12 @@ class CampaignRequest extends FormRequest
                         $validator->errors()->add('sending_window_end', 'Godzina zakończenia musi być po godzinie startu.');
                     }
                 }
+            }
+
+            $min = (int) $this->input('send_interval_seconds', 1);
+            $max = (int) $this->input('send_interval_max_seconds', $min);
+            if ($max < $min) {
+                $validator->errors()->add('send_interval_max_seconds', 'Maksymalny odstęp nie może być mniejszy niż minimalny.');
             }
         });
     }

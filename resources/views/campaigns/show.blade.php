@@ -4,6 +4,15 @@
             <p class="text-sm text-slate-500">Kampania</p>
             <h1 class="text-2xl font-semibold text-slate-900">{{ $campaign->name }}</h1>
             <p class="text-sm text-slate-600">{{ $campaign->subject }}</p>
+            @php
+                $subjectVariants = $campaign->extra_subjects ?? [];
+                $contentVariants = $campaign->extra_contents ?? [];
+            @endphp
+            @if(!empty($subjectVariants) || !empty($contentVariants))
+                <p class="text-xs text-blue-700 mt-1">
+                    Warianty: tematy ({{ 1 + count($subjectVariants) }}), treści ({{ 1 + count($contentVariants) }}) — losowane per odbiorca.
+                </p>
+            @endif
         </div>
         <div class="flex items-center space-x-3 mt-3 sm:mt-0">
             <a href="{{ route('campaigns.edit', $campaign) }}" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Edytuj</a>
@@ -69,7 +78,12 @@
                 </div>
                 <div class="rounded-lg border border-slate-100 bg-slate-50 p-4">
                     <p class="font-semibold text-slate-900 mb-1">Harmonogram</p>
-                    <p>Odstęp: <span class="font-semibold">{{ $campaign->send_interval_seconds }} s</span></p>
+                    <p>Odstęp: <span class="font-semibold">
+                        {{ $campaign->send_interval_seconds }} s
+                        @if($campaign->send_interval_max_seconds && $campaign->send_interval_max_seconds != $campaign->send_interval_seconds)
+                            – {{ $campaign->send_interval_max_seconds }} s (losowo)
+                        @endif
+                    </span></p>
                     <p>Zaplanowano: <span class="font-semibold">{{ $campaign->scheduled_at?->format('Y-m-d H:i') ?? '—' }}</span></p>
                     <p class="mt-2 text-sm text-slate-700">
                         Okno wysyłki:
@@ -91,9 +105,24 @@
 
         <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 class="text-lg font-semibold text-slate-900 mb-3">Podgląd treści</h2>
+            @if(!empty($subjectVariants) || !empty($contentVariants))
+                <div class="mb-3 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800">
+                    System losuje temat i treść spośród wariantów przy wysyłce każdego maila.
+                </div>
+            @endif
             <div class="rounded-lg border border-slate-100 bg-slate-50 p-4 text-sm text-slate-800 space-y-2">
                 {!! $campaign->html_content !!}
             </div>
+            @if(!empty($contentVariants))
+                <div class="mt-4 space-y-3">
+                    @foreach($contentVariants as $idx => $variant)
+                        <div class="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm text-slate-800 space-y-2">
+                            <p class="text-xs uppercase tracking-wide text-slate-500">Treść dodatkowa #{{ $idx + 1 }}</p>
+                            {!! $variant !!}
+                        </div>
+                    @endforeach
+                </div>
+            @endif
         </div>
     </div>
 </x-app-layout>

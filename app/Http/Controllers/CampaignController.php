@@ -140,10 +140,32 @@ class CampaignController extends Controller
     {
         $data = $request->validated();
 
+        $extraSubjects = collect($request->input('extra_subjects', []))
+            ->map(fn ($item) => trim((string) $item))
+            ->filter()
+            ->values()
+            ->all();
+        $extraContents = collect($request->input('extra_contents', []))
+            ->map(fn ($item) => trim((string) $item))
+            ->filter()
+            ->values()
+            ->all();
+
+        if (!empty($extraSubjects) && empty($data['subject'])) {
+            $data['subject'] = array_shift($extraSubjects);
+        }
+        if (!empty($extraContents) && empty($data['html_content'])) {
+            $data['html_content'] = array_shift($extraContents);
+        }
+
+        $data['extra_subjects'] = $extraSubjects;
+        $data['extra_contents'] = $extraContents;
+
         $data['track_opens'] = $request->boolean('track_opens');
         $data['track_clicks'] = $request->boolean('track_clicks');
         $data['enable_unsubscribe'] = $request->boolean('enable_unsubscribe');
         $data['send_interval_seconds'] = (int) $request->input('send_interval_seconds', 1);
+        $data['send_interval_max_seconds'] = (int) $request->input('send_interval_max_seconds', $data['send_interval_seconds']);
         $data['scheduled_at'] = $request->input('scheduled_at') ?: null;
         $data['template_id'] = $data['template_id'] ?? null;
         $data['status'] = 'draft';
