@@ -295,7 +295,7 @@ class CampaignSenderService
 
             $host = $identity->imap_host ?? $identity->smtp_host;
             $port = $identity->imap_port ?? 993;
-            $encryption = $identity->imap_encryption ?: 'ssl';
+            $encryption = $identity->imap_encryption; // '', ssl, tls
             $username = $identity->imap_username ?? $identity->smtp_username;
             $password = $identity->imap_password ?? $identity->smtp_password;
 
@@ -303,7 +303,16 @@ class CampaignSenderService
                 return;
             }
 
-            $mailbox = sprintf('{%s:%d/imap/%s}Sent', $host, $port, $encryption === 'tls' ? 'tls' : 'ssl');
+            $flags = '/imap';
+            if ($encryption === 'tls') {
+                $flags .= '/tls';
+            } elseif ($encryption === 'ssl') {
+                $flags .= '/ssl';
+            } else {
+                $flags .= '/notls';
+            }
+
+            $mailbox = sprintf('{%s:%d%s}Sent', $host, $port, $flags);
             $stream = @imap_open($mailbox, $username, $password);
 
             if (! $stream) {

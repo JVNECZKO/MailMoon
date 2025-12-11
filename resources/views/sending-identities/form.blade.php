@@ -71,7 +71,7 @@
                 <div>
                     <label class="block text-sm font-medium text-slate-700">Szyfrowanie IMAP</label>
                     <select name="imap_encryption" class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500">
-                        <option value="" @selected(old('imap_encryption', $sendingIdentity->imap_encryption ?? '') === '')>Brak</option>
+                        <option value="" @selected(old('imap_encryption', $sendingIdentity->imap_encryption ?? '') === '')>Brak / plain</option>
                         <option value="tls" @selected(old('imap_encryption', $sendingIdentity->imap_encryption ?? '') === 'tls')>TLS</option>
                         <option value="ssl" @selected(old('imap_encryption', $sendingIdentity->imap_encryption ?? '') === 'ssl')>SSL</option>
                     </select>
