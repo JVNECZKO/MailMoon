@@ -8,7 +8,7 @@
             <form action="{{ route('sending-identities.test', $sendingIdentity) }}" method="POST" class="flex items-center space-x-2">
                 @csrf
                 <input type="email" name="recipient" value="{{ auth()->user()->email }}" class="rounded-md border border-slate-300 px-2 py-1 text-sm focus:border-blue-600 focus:ring-blue-500" title="Adres do testu SMTP">
-                <button type="submit" class="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100">Test SMTP</button>
+                <button type="submit" class="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-800 hover:bg-blue-100">Test SMTP/IMAP</button>
             </form>
             <a href="{{ route('sending-identities.index') }}" class="text-sm text-blue-700 hover:underline">Powrót</a>
         </div>

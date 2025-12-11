@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SendingIdentityRequest;
 use App\Models\SendingIdentity;
 use App\Services\SmtpTestService;
+use App\Services\ImapTestService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -75,14 +76,26 @@ class SendingIdentityController extends Controller
         return redirect()->route('sending-identities.index')->with('status', 'Tożsamość nadawcy została usunięta.');
     }
 
-    public function test(Request $request, SendingIdentity $sendingIdentity, SmtpTestService $smtpTestService): RedirectResponse
+    public function test(Request $request, SendingIdentity $sendingIdentity, SmtpTestService $smtpTestService, ImapTestService $imapTestService): RedirectResponse
     {
         $recipient = $request->input('recipient', $request->user()->email);
 
         try {
             $smtpTestService->sendTestEmail($sendingIdentity, $recipient);
 
-            return back()->with('status', 'Test SMTP wysłany na ' . $recipient . '. Sprawdź skrzynkę.');
+            $imapResult = null;
+            if ($sendingIdentity->send_mode === 'imap') {
+                $imapResult = $imapTestService->appendTest($sendingIdentity);
+            }
+
+            $msg = 'Test SMTP wysłany na ' . $recipient . '.';
+            if ($imapResult === true) {
+                $msg .= ' Test IMAP (Sent) zakończony powodzeniem.';
+            } elseif (is_string($imapResult)) {
+                $msg .= ' IMAP: ' . $imapResult;
+            }
+
+            return back()->with('status', $msg);
         } catch (\Throwable $e) {
             return back()->with('error', 'Test SMTP nie powiódł się: ' . $e->getMessage());
         }

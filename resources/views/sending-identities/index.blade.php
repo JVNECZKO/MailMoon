@@ -29,7 +29,7 @@
                             <form action="{{ route('sending-identities.test', $identity) }}" method="POST" class="flex items-center space-x-2">
                                 @csrf
                                 <input type="hidden" name="recipient" value="{{ auth()->user()->email }}">
-                                <button type="submit" class="text-blue-700 hover:underline">Test SMTP</button>
+                                <button type="submit" class="text-blue-700 hover:underline">Test SMTP/IMAP</button>
                             </form>
                         </td>
                         <td class="px-4 py-3">
