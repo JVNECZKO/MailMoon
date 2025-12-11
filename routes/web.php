@@ -10,6 +10,7 @@ use App\Http\Controllers\SendingIdentityController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TemplateController;
 use App\Http\Controllers\TrackingController;
+use App\Http\Controllers\WarmingController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/dashboard');
@@ -35,6 +36,12 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/settings/cron', [SettingsController::class, 'cron'])->name('settings.cron');
     Route::post('/settings/cron/regenerate', [SettingsController::class, 'regenerateCron'])->name('settings.cron.regenerate');
+
+    Route::get('/sending-identities/{sending_identity}/warming', [WarmingController::class, 'show'])->name('warming.show');
+    Route::post('/sending-identities/{sending_identity}/warming/start', [WarmingController::class, 'start'])->name('warming.start');
+    Route::post('/sending-identities/{sending_identity}/warming/pause', [WarmingController::class, 'pause'])->name('warming.pause');
+    Route::post('/sending-identities/{sending_identity}/warming/resume', [WarmingController::class, 'resume'])->name('warming.resume');
+    Route::post('/sending-identities/{sending_identity}/warming/finish', [WarmingController::class, 'finish'])->name('warming.finish');
 });
 
 Route::get('/track/open/{message}/{token}', [TrackingController::class, 'open'])->name('tracking.open');

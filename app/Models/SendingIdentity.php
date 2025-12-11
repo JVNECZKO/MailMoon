@@ -41,4 +41,9 @@ class SendingIdentity extends Model
     {
         return $this->hasMany(Campaign::class);
     }
+
+    public function warming(): HasOne
+    {
+        return $this->hasOne(Warming::class);
+    }
 }

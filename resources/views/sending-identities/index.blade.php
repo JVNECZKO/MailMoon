@@ -41,6 +41,7 @@
                         </td>
                         <td class="px-4 py-3 text-right space-x-2">
                             <a href="{{ route('sending-identities.edit', $identity) }}" class="text-blue-700 hover:underline">Edytuj</a>
+                            <a href="{{ route('warming.show', $identity) }}" class="text-slate-700 hover:underline">Warming</a>
                             <form action="{{ route('sending-identities.destroy', $identity) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')

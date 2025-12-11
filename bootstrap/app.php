@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use App\Console\Commands\RunWarming;
 use App\Console\Commands\SendCampaignNow;
 use App\Console\Commands\SendDueCampaigns;
 
@@ -12,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        RunWarming::class,
+    ])
     ->withCommands([
         App\Console\Commands\SendDueCampaigns::class,
         App\Console\Commands\SendCampaignNow::class,
