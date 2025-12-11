@@ -7,14 +7,26 @@
                     return;
                 }
 
-                tinymce.init({
-                    selector: '.tinymce-editor',
-                    height: 420,
-                    menubar: false,
-                    plugins: 'link lists table code autoresize',
-                    toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | link table | code',
-                    branding: false,
-                });
+                window.initTinyEditors = function () {
+                    document.querySelectorAll('textarea.tinymce-editor').forEach((el) => {
+                        if (el.dataset.tinyInit === '1') {
+                            return;
+                        }
+                        tinymce.init({
+                            target: el,
+                            height: 420,
+                            menubar: false,
+                            plugins: 'link lists table code autoresize',
+                            toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | link table | code',
+                            branding: false,
+                            setup: () => {
+                                el.dataset.tinyInit = '1';
+                            }
+                        });
+                    });
+                };
+
+                initTinyEditors();
 
                 document.querySelectorAll('form').forEach((form) => {
                     form.addEventListener('submit', () => {

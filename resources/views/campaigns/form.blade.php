@@ -195,7 +195,7 @@
         <p class="text-sm text-slate-600 mt-1">Możesz wprowadzić prosty HTML lub tekst. Losujemy jedną treść dla każdego odbiorcy.</p>
         <div id="content-variants" class="mt-4 space-y-3">
             @foreach($extraContents as $idx => $content)
-                <textarea name="extra_contents[]" rows="3" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Treść #{{ $idx + 1 }}">{{ $content }}</textarea>
+                <textarea name="extra_contents[]" rows="3" class="tinymce-editor w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Treść #{{ $idx + 1 }}">{{ $content }}</textarea>
             @endforeach
         </div>
         <div class="mt-4 flex items-center justify-between">
@@ -247,8 +247,23 @@
                     area.name = 'extra_contents[]';
                     area.rows = 3;
                     area.placeholder = `Treść #${(contentWrap?.children.length || 0) + 1}`;
-                    area.className = 'w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500';
+                    area.className = 'tinymce-editor w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500';
                     contentWrap?.appendChild(area);
+                    if (typeof window.initTinyEditors === 'function') {
+                        setTimeout(() => window.initTinyEditors(), 0);
+                    }
+                });
+
+                // zainicjuj TinyMCE dla istniejących pól wariantów po otwarciu modala
+                openContent?.addEventListener('click', () => {
+                    if (typeof window.initTinyEditors === 'function') {
+                        setTimeout(() => window.initTinyEditors(), 0);
+                    }
+                });
+                openSubject?.addEventListener('click', () => {
+                    if (typeof window.initTinyEditors === 'function') {
+                        setTimeout(() => window.initTinyEditors(), 0);
+                    }
                 });
             });
         </script>
