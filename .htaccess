@@ -1,0 +1,11 @@
+RewriteEngine On
+
+# jeśli żądanie już leci do /public, zostaw w spokoju
+RewriteCond %{REQUEST_URI} !^/public/
+
+# jeśli istnieje fizyczny plik lub katalog w root – też zostaw (żeby np. nie psuć nic innego)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# cały ruch kieruj do /public
+RewriteRule ^(.*)$ public/$1 [L,QSA]
