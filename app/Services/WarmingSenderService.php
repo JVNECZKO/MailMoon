@@ -26,19 +26,30 @@ class WarmingSenderService
 
     private function runWarming(Warming $warming): array
     {
-        // tylko jedna wysyłka dziennie
-        if ($warming->last_run_at && $warming->last_run_at->isSameDay(now())) {
-            return ['skipped' => 'already_sent_today'];
-        }
-
         $schedule = $warming->schedule ?? [];
         $target = $schedule[$warming->day_current - 1] ?? $warming->daily_target ?? 0;
 
-        $contacts = $warming->contactList->contacts;
+        $contacts = $warming->contactList->contacts->sortBy('id')->values();
         if ($contacts->isEmpty()) {
             $warming->update(['status' => 'paused']);
             return ['error' => 'Brak kontaktów na liście'];
         }
+
+        $target = min($target, $contacts->count());
+        if ($target <= 0) {
+            return ['skipped' => 'no_target_for_today'];
+        }
+
+        // jeżeli dzienny limit osiągnięty, przejdź do kolejnego dnia
+        if ($warming->sent_today >= $target) {
+            return $this->advanceDay($warming, $schedule);
+        }
+
+        // wysyłamy małą porcję, aby żądanie cron nie wisiało (reszta w kolejnym uruchomieniu crona)
+        $remaining = $target - $warming->sent_today;
+        $batchSize = min($remaining, 10); // maks 10 maili na jedno wywołanie crona
+        $startIndex = $warming->sent_today;
+        $batch = $contacts->slice($startIndex, $batchSize);
 
         $transport = new EsmtpTransport(
             $warming->sendingIdentity->smtp_host,
@@ -49,14 +60,7 @@ class WarmingSenderService
         $transport->setPassword($warming->sendingIdentity->smtp_password);
 
         $sent = 0;
-        $countContacts = $contacts->count();
-        if ($countContacts === 0) {
-            return ['error' => 'Brak kontaktów'];
-        }
-
-        for ($i = 0; $i < $target; $i++) {
-            $contact = $contacts[$i % $countContacts];
-
+        foreach ($batch as $contact) {
             try {
                 $email = (new Email())
                     ->from($warming->sendingIdentity->from_email)
@@ -72,27 +76,35 @@ class WarmingSenderService
                     'error' => $e->getMessage(),
                 ]);
             }
-
-            sleep(max(1, (int) $warming->send_interval_seconds));
         }
 
         $warming->update([
-            'sent_today' => $sent,
+            'sent_today' => $warming->sent_today + $sent,
             'total_sent' => $warming->total_sent + $sent,
             'last_run_at' => now(),
         ]);
 
-        // przejście do kolejnego dnia
-        if ($warming->day_current >= $warming->day_total) {
-            $warming->update(['status' => 'finished', 'finished_at' => now()]);
-        } else {
-            $warming->update([
-                'day_current' => $warming->day_current + 1,
-                'daily_target' => $schedule[$warming->day_current] ?? $warming->daily_target,
-                'sent_today' => 0,
-            ]);
+        if ($warming->sent_today >= $target) {
+            return $this->advanceDay($warming, $schedule, $sent, $target);
         }
 
         return ['sent' => $sent, 'target' => $target];
+    }
+
+    private function advanceDay(Warming $warming, array $schedule, int $justSent = 0, int $target = 0): array
+    {
+        if ($warming->day_current >= $warming->day_total) {
+            $warming->update(['status' => 'finished', 'finished_at' => now()]);
+            return ['finished' => true, 'sent' => $justSent, 'target' => $target];
+        }
+
+        $warming->update([
+            'day_current' => $warming->day_current + 1,
+            'daily_target' => $schedule[$warming->day_current] ?? $warming->daily_target,
+            'sent_today' => 0,
+            'last_run_at' => now(),
+        ]);
+
+        return ['advanced_day' => true, 'sent' => $justSent, 'target' => $target];
     }
 }
