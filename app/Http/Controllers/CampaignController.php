@@ -225,21 +225,26 @@ class CampaignController extends Controller
             return redirect()->back()->with('error', 'Aktywna tożsamość nadawcy jest wymagana do wysyłki.');
         }
 
-        try {
-            $result = $this->senderService->send($campaign);
+        $campaignId = $campaign->id;
 
-            $message = sprintf(
-                'Kampania wysłana. Sukcesy: %d, błędy: %d.',
-                $result['sent'],
-                $result['failed']
-            );
+        dispatch(function () use ($campaignId) {
+            $campaign = Campaign::find($campaignId);
+            if (! $campaign) {
+                return;
+            }
 
-            return redirect()->route('campaigns.show', $campaign)->with('status', $message);
-        } catch (\Throwable $e) {
-            $campaign->update(['status' => 'failed']);
+            try {
+                app(CampaignSenderService::class)->send($campaign);
+            } catch (\Throwable $e) {
+                $campaign->update(['status' => 'failed']);
+            }
+        })->afterResponse();
 
-            return redirect()->route('campaigns.show', $campaign)->with('error', 'Wysyłka nie powiodła się: ' . $e->getMessage());
-        }
+        $campaign->update(['status' => 'sending', 'scheduled_at' => null]);
+
+        return redirect()
+            ->route('campaigns.show', $campaign)
+            ->with('status', 'Wysyłka rozpoczęta w tle, podgląd kampanii pokaże postęp.');
     }
 
     private function campaignStats(Campaign $campaign): array
