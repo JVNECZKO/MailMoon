@@ -30,7 +30,7 @@ class WarmingController extends Controller
         return view('warming.show', compact('sendingIdentity', 'warming', 'contactLists', 'schedule', 'progress'));
     }
 
-    public function start(Request $request, SendingIdentity $sendingIdentity): RedirectResponse
+    public function start(Request $request, SendingIdentity $sendingIdentity, WarmingSenderService $service): RedirectResponse
     {
         $this->authorize('update', $sendingIdentity);
 
@@ -70,6 +70,9 @@ class WarmingController extends Controller
                 'finished_at' => null,
             ]
         );
+
+        // wyślij od razu pierwszą porcję, żeby użytkownik widział efekt startu
+        $service->run();
 
         return back()->with('status', 'Warming uruchomiony (plan: ' . ucfirst($data['plan']) . ').');
     }

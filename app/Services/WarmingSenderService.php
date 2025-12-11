@@ -26,6 +26,11 @@ class WarmingSenderService
 
     private function runWarming(Warming $warming): array
     {
+        // tylko jedna wysyłka dziennie
+        if ($warming->last_run_at && $warming->last_run_at->isSameDay(now())) {
+            return ['skipped' => 'already_sent_today'];
+        }
+
         $schedule = $warming->schedule ?? [];
         $target = $schedule[$warming->day_current - 1] ?? $warming->daily_target ?? 0;
 
@@ -44,12 +49,13 @@ class WarmingSenderService
         $transport->setPassword($warming->sendingIdentity->smtp_password);
 
         $sent = 0;
-        $currentIndex = 0;
+        $countContacts = $contacts->count();
+        if ($countContacts === 0) {
+            return ['error' => 'Brak kontaktów'];
+        }
 
-        foreach ($contacts as $contact) {
-            if ($sent >= $target) {
-                break;
-            }
+        for ($i = 0; $i < $target; $i++) {
+            $contact = $contacts[$i % $countContacts];
 
             try {
                 $email = (new Email())
@@ -67,7 +73,6 @@ class WarmingSenderService
                 ]);
             }
 
-            $currentIndex++;
             sleep(max(1, (int) $warming->send_interval_seconds));
         }
 
@@ -84,6 +89,7 @@ class WarmingSenderService
             $warming->update([
                 'day_current' => $warming->day_current + 1,
                 'daily_target' => $schedule[$warming->day_current] ?? $warming->daily_target,
+                'sent_today' => 0,
             ]);
         }
 

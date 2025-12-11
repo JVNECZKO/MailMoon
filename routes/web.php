@@ -48,7 +48,10 @@ Route::get('/track/open/{message}/{token}', [TrackingController::class, 'open'])
 Route::get('/c/{message}/{token}', [TrackingController::class, 'click'])->name('tracking.click');
 Route::get('/u/{token}', [TrackingController::class, 'unsubscribe'])->name('tracking.unsubscribe');
 
-Route::get('/cron/send-due', function (\App\Services\CampaignSenderService $senderService) {
+Route::get('/cron/send-due', function (
+    \App\Services\CampaignSenderService $senderService,
+    \App\Services\WarmingSenderService $warmingSenderService
+) {
     $due = \App\Models\Campaign::where('status', 'scheduled')
         ->whereNotNull('scheduled_at')
         ->where('scheduled_at', '<=', now())
@@ -65,10 +68,13 @@ Route::get('/cron/send-due', function (\App\Services\CampaignSenderService $send
         }
     }
 
+    $warming = $warmingSenderService->run();
+
     return response()->json([
         'status' => 'ok',
         'processed' => $due->count(),
         'summary' => $summary,
+        'warming' => $warming,
     ]);
 })->name('cron.send-due')->middleware('signed');
 
