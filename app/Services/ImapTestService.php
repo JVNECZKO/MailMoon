@@ -8,6 +8,10 @@ class ImapTestService
 {
     public function appendTest(SendingIdentity $identity): bool|string
     {
+        if (! function_exists('imap_open')) {
+            return 'Funkcja IMAP (imap_open) jest niedostępna na serwerze.';
+        }
+
         $host = $identity->imap_host ?? $identity->smtp_host;
         $port = $identity->imap_port ?? 993;
         $encryption = $identity->imap_encryption; // '', ssl, tls
@@ -32,26 +36,20 @@ class ImapTestService
         }
 
         try {
-            $config = \Webklex\PHPIMAP\Config::make([
-                'host'          => $host,
-                'port'          => (int) $port,
-                'protocol'      => 'imap',
-                'encryption'    => $encryption ?: 'ssl',
-                'validate_cert' => false,
-                'username'      => $username,
-                'password'      => $password,
-                'authentication'=> 'login',
-                'timeout'       => 10,
-            ]);
+            $flags = '/imap';
+            if ($encryption === 'tls') {
+                $flags .= '/tls/novalidate-cert/auth=LOGIN';
+            } elseif ($encryption === 'ssl') {
+                $flags .= '/ssl/novalidate-cert/auth=LOGIN';
+            } else {
+                $flags .= '/notls/novalidate-cert/auth=LOGIN';
+            }
 
-            $client = new \Webklex\PHPIMAP\Client($config);
-            $client->connect();
+            $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $identity->imap_sent_folder ?? 'Sent');
+            $stream = @imap_open($mailbox, $username, $password, 0, 1);
 
-            $folderName = $identity->imap_sent_folder ?? 'Sent';
-            $folder = $client->getFolder($folderName) ?: $client->getFolder('INBOX.Sent');
-
-            if (! $folder) {
-                return 'Nie znaleziono folderu „Sent”.';
+            if (! $stream) {
+                return 'Nie można połączyć z IMAP: ' . (imap_last_error() ?: 'brak szczegółów');
             }
 
             $dummyMessage = "From: {$identity->from_email}\r\n"
@@ -60,8 +58,12 @@ class ImapTestService
                 . "\r\n"
                 . "Test append to Sent folder.";
 
-            $folder->appendMessage($dummyMessage);
-            $client->disconnect();
+            $ok = @imap_append($stream, $mailbox, $dummyMessage);
+            @imap_close($stream);
+
+            if (! $ok) {
+                return 'IMAP append nie powiódł się: ' . (imap_last_error() ?: 'brak szczegółów');
+            }
 
             return true;
         } catch (\Throwable $e) {

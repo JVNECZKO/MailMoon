@@ -347,43 +347,49 @@ class CampaignSenderService
     private function appendToImapSent(SendingIdentity $identity, Email $email): void
     {
         try {
-            if (! class_exists(\Webklex\IMAP\Facades\Client::class)) {
+            if (! function_exists('imap_open')) {
                 return;
             }
 
-            // zbuduj dynamiczną konfigurację pod bieżącą tożsamość
-            $accountConfig = \Webklex\PHPIMAP\Config::make([
-                'host'          => $identity->imap_host ?: $identity->smtp_host,
-                'port'          => (int) ($identity->imap_port ?: ($identity->imap_encryption === 'tls' ? 143 : 993)),
-                'protocol'      => 'imap',
-                'encryption'    => $identity->imap_encryption ?: 'ssl',
-                'validate_cert' => false,
-                'username'      => $identity->imap_username ?: $identity->smtp_username,
-                'password'      => $identity->imap_password ?: $identity->smtp_password,
-                'authentication'=> 'login',
-                'timeout'       => 10,
-            ]);
+            $host = $identity->imap_host ?? $identity->smtp_host;
+            $port = $identity->imap_port ?? 993;
+            $encryption = $identity->imap_encryption; // '', ssl, tls
+            $username = $identity->imap_username ?? $identity->smtp_username;
+            $password = $identity->imap_password ?? $identity->smtp_password;
 
-            if (! $accountConfig['host'] || ! $accountConfig['username'] || ! $accountConfig['password']) {
+            if (! $host || ! $username || ! $password) {
                 return;
             }
 
-            // utwórz klienta ad-hoc, bez polegania na config/imap.php
-            $client = new \Webklex\PHPIMAP\Client($accountConfig);
-            $client->connect();
+            if (! $encryption) {
+                $encryption = ((int)$port === 993) ? 'ssl' : 'tls';
+            }
+
+            if ($encryption === 'ssl' && (int) $port === 143) {
+                $port = 993;
+            }
+            if ($encryption === 'tls' && (int) $port === 993) {
+                $port = 143;
+            }
+
+            $flags = '/imap';
+            if ($encryption === 'tls') {
+                $flags .= '/tls/novalidate-cert/auth=LOGIN';
+            } elseif ($encryption === 'ssl') {
+                $flags .= '/ssl/novalidate-cert/auth=LOGIN';
+            } else {
+                $flags .= '/notls/novalidate-cert/auth=LOGIN';
+            }
 
             $folderName = $identity->imap_sent_folder ?? 'Sent';
-            $folder = $client->getFolder($folderName);
-            if (! $folder) {
-                // fallback: INBOX.Sent
-                $folder = $client->getFolder('INBOX.Sent');
-            }
+            $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $folderName);
+            $stream = @imap_open($mailbox, $username, $password, 0, 1);
 
-            if ($folder) {
-                $folder->appendMessage($email->toString());
+            if ($stream) {
+                $rawMessage = $email->toString();
+                @imap_append($stream, $mailbox, $rawMessage);
+                @imap_close($stream);
             }
-
-            $client->disconnect();
         } catch (\Throwable $e) {
             Log::warning('IMAP append failed', [
                 'identity_id' => $identity->id,
