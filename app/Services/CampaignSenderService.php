@@ -20,6 +20,13 @@ class CampaignSenderService
         $campaign->load(['contactList.contacts', 'sendingIdentity']);
         $identity = $campaign->sendingIdentity;
 
+        Log::info('Campaign send started', [
+            'campaign_id' => $campaign->id,
+            'identity_id' => $identity?->id,
+            'contact_count' => $campaign->contactList?->contacts?->count(),
+            'send_mode' => $identity?->send_mode,
+        ]);
+
         if (!$identity->is_active) {
             throw new \RuntimeException('Wybrana tożsamość nadawcy jest nieaktywna.');
         }
@@ -53,6 +60,10 @@ class CampaignSenderService
         $rescheduled = false;
 
         $messages = $campaign->messages()->with('contact')->get();
+        Log::info('Campaign messages loaded', [
+            'campaign_id' => $campaign->id,
+            'messages_total' => $messages->count(),
+        ]);
 
         foreach ($messages as $message) {
             try {
@@ -84,6 +95,7 @@ class CampaignSenderService
                     'campaign_id' => $campaign->id,
                     'message_id' => $message->id,
                     'error' => $e->getMessage(),
+                    'trace' => substr($e->getTraceAsString(), 0, 2000),
                 ]);
 
                 // jeśli serwer odmawia (np. limity), przerwij, by nie wyzerować sesji
@@ -105,6 +117,14 @@ class CampaignSenderService
             $status = ($sent > 0) ? 'sent' : 'failed';
             $campaign->update(['status' => $status]);
         }
+
+        Log::info('Campaign send finished', [
+            'campaign_id' => $campaign->id,
+            'sent' => $sent,
+            'failed' => $failed,
+            'rescheduled' => $rescheduled,
+            'final_status' => $campaign->status,
+        ]);
 
         return [
             'sent' => $sent,
