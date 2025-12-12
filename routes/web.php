@@ -63,7 +63,8 @@ Route::get('/cron/send-due', function (
 
     foreach ($due as $campaign) {
         try {
-            $summary[$campaign->id] = $senderService->send($campaign, 10, false);
+            // wysyłamy po 1 wiadomości na wywołanie crona, z opóźnieniem ustawianym w scheduled_at
+            $summary[$campaign->id] = $senderService->send($campaign, 1, true);
         } catch (\Throwable $e) {
             $campaign->update(['status' => 'failed']);
             \Illuminate\Support\Facades\Log::error('Cron send-due failed', [

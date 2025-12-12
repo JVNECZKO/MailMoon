@@ -93,6 +93,9 @@ class CampaignSenderService
             ];
         }
 
+        $delayMin = max(0, (int) $campaign->send_interval_seconds);
+        $delayMax = max($delayMin, (int) ($campaign->send_interval_max_seconds ?? $delayMin));
+
         foreach ($messages as $message) {
             try {
                 $windowStatus = $this->waitForWindow($campaign);
@@ -137,7 +140,12 @@ class CampaignSenderService
             $delay = $min === $max ? $min : random_int($min, $max);
 
             if ($respectDelay && $delay > 0) {
-                sleep($delay);
+                // zamiast blokować request – ustaw ponowny schedule i przerwij po jednej wiadomości
+                $campaign->update([
+                    'status' => 'scheduled',
+                    'scheduled_at' => now()->addSeconds($delay),
+                ]);
+                break;
             }
         }
 
