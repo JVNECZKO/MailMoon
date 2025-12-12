@@ -374,21 +374,30 @@ class CampaignSenderService
 
             $flags = '/imap';
             if ($encryption === 'tls') {
-                $flags .= '/tls/novalidate-cert/auth=LOGIN';
+                $flags .= '/tls/novalidate-cert';
             } elseif ($encryption === 'ssl') {
-                $flags .= '/ssl/novalidate-cert/auth=LOGIN';
+                $flags .= '/ssl/novalidate-cert';
             } else { // none / plain
-                $flags .= '/notls/auth=PLAIN';
+                $flags .= '/notls/novalidate-cert';
             }
 
-            $folderName = $identity->imap_sent_folder ?? 'Sent';
-            $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $folderName);
-            $stream = @imap_open($mailbox, $username, $password, 0, 1);
+            $folders = [
+                $identity->imap_sent_folder ?: 'Sent',
+                'INBOX.Sent',
+                'Sent',
+                'INBOX/Sent',
+            ];
 
-            if ($stream) {
-                $rawMessage = $email->toString();
-                @imap_append($stream, $mailbox, $rawMessage);
-                @imap_close($stream);
+            foreach ($folders as $folder) {
+                $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $folder);
+                $stream = @imap_open($mailbox, $username, $password, 0, 1);
+
+                if ($stream) {
+                    $rawMessage = $email->toString();
+                    @imap_append($stream, $mailbox, $rawMessage);
+                    @imap_close($stream);
+                    break;
+                }
             }
         } catch (\Throwable $e) {
             Log::warning('IMAP append failed', [

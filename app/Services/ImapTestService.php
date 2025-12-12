@@ -38,34 +38,47 @@ class ImapTestService
         try {
             $flags = '/imap';
             if ($encryption === 'tls') {
-                $flags .= '/tls/novalidate-cert/auth=LOGIN';
+                $flags .= '/tls/novalidate-cert';
             } elseif ($encryption === 'ssl') {
-                $flags .= '/ssl/novalidate-cert/auth=LOGIN';
+                $flags .= '/ssl/novalidate-cert';
             } else { // none / plain
-                $flags .= '/notls/auth=PLAIN';
+                $flags .= '/notls/novalidate-cert';
             }
 
-            $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $identity->imap_sent_folder ?? 'Sent');
-            $stream = @imap_open($mailbox, $username, $password, 0, 1);
+            $folders = [
+                $identity->imap_sent_folder ?: 'Sent',
+                'INBOX.Sent',
+                'Sent',
+                'INBOX/Sent',
+            ];
 
-            if (! $stream) {
-                return 'Nie można połączyć z IMAP: ' . (imap_last_error() ?: 'brak szczegółów');
+            $lastError = null;
+            foreach ($folders as $folder) {
+                $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $folder);
+                $stream = @imap_open($mailbox, $username, $password, 0, 1);
+
+                if (! $stream) {
+                    $lastError = imap_last_error();
+                    continue;
+                }
+
+                $dummyMessage = "From: {$identity->from_email}\r\n"
+                    . "To: {$identity->from_email}\r\n"
+                    . "Subject: MailMoon IMAP test\r\n"
+                    . "\r\n"
+                    . "Test append to Sent folder.";
+
+                $ok = @imap_append($stream, $mailbox, $dummyMessage);
+                @imap_close($stream);
+
+                if ($ok) {
+                    return true;
+                }
+
+                $lastError = imap_last_error();
             }
 
-            $dummyMessage = "From: {$identity->from_email}\r\n"
-                . "To: {$identity->from_email}\r\n"
-                . "Subject: MailMoon IMAP test\r\n"
-                . "\r\n"
-                . "Test append to Sent folder.";
-
-            $ok = @imap_append($stream, $mailbox, $dummyMessage);
-            @imap_close($stream);
-
-            if (! $ok) {
-                return 'IMAP append nie powiódł się: ' . (imap_last_error() ?: 'brak szczegółów');
-            }
-
-            return true;
+            return 'Nie można połączyć z IMAP: ' . ($lastError ?: 'brak szczegółów');
         } catch (\Throwable $e) {
             return 'IMAP błąd: ' . $e->getMessage();
         }
