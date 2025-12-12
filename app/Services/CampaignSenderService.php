@@ -156,6 +156,7 @@ class CampaignSenderService
 
         $sentMessage = $transport->send($email);
 
+        // IMAP append tylko gdy włączone i gdy nie powoduje błędów uwierzytelnienia
         if ($identity->send_mode === 'imap') {
             $this->appendToImapSent($identity, $email);
         }
@@ -349,14 +350,11 @@ class CampaignSenderService
             $mailbox = sprintf('{%s:%d%s}Sent', $host, $port, $flags);
             $stream = @imap_open($mailbox, $username, $password, 0, 1);
 
-            if (! $stream) {
-                return;
+            if ($stream) {
+                $rawMessage = $email->toString();
+                @imap_append($stream, $mailbox, $rawMessage);
+                @imap_close($stream);
             }
-
-            $rawMessage = $email->toString();
-
-            @imap_append($stream, $mailbox, $rawMessage);
-            @imap_close($stream);
         } catch (\Throwable $e) {
             Log::warning('IMAP append failed', [
                 'identity_id' => $identity->id,
