@@ -45,8 +45,10 @@ class CampaignSenderService
             ];
         }
 
-        if ($campaign->messages()->count() === 0) {
+        $totalMessages = $campaign->messages()->count();
+        if ($totalMessages === 0) {
             $this->createMessages($campaign);
+            $totalMessages = $campaign->messages()->count();
         }
 
         $campaign->update([
@@ -59,6 +61,7 @@ class CampaignSenderService
         $failed = 0;
         $rescheduled = false;
 
+        $unsentTotal = $campaign->messages()->whereNull('sent_at')->count();
         $messages = $campaign->messages()
             ->with('contact')
             ->whereNull('sent_at')
@@ -67,7 +70,23 @@ class CampaignSenderService
         Log::info('Campaign messages loaded', [
             'campaign_id' => $campaign->id,
             'messages_total' => $messages->count(),
+            'unsent_total' => $unsentTotal,
+            'batch_size' => $batchSize,
         ]);
+
+        if ($messages->isEmpty()) {
+            $campaign->update(['status' => $sent > 0 ? 'sent' : 'failed']);
+            Log::warning('Campaign send: no messages to process', [
+                'campaign_id' => $campaign->id,
+                'total_messages' => $totalMessages,
+                'unsent_total' => $unsentTotal,
+            ]);
+            return [
+                'sent' => $sent,
+                'failed' => $failed,
+                'rescheduled' => false,
+            ];
+        }
 
         foreach ($messages as $message) {
             try {

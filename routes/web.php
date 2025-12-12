@@ -64,6 +64,10 @@ Route::get('/cron/send-due', function (
             $summary[$campaign->id] = $senderService->send($campaign, 10);
         } catch (\Throwable $e) {
             $campaign->update(['status' => 'failed']);
+            \Illuminate\Support\Facades\Log::error('Cron send-due failed', [
+                'campaign_id' => $campaign->id,
+                'error' => $e->getMessage(),
+            ]);
             $summary[$campaign->id] = ['error' => $e->getMessage()];
         }
     }
