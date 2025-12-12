@@ -339,15 +339,15 @@ class CampaignSenderService
 
             $flags = '/imap';
             if ($encryption === 'tls') {
-                $flags .= '/tls';
+                $flags .= '/tls/novalidate-cert/auth=LOGIN';
             } elseif ($encryption === 'ssl') {
-                $flags .= '/ssl';
+                $flags .= '/ssl/novalidate-cert/auth=LOGIN';
             } else {
-                $flags .= '/notls';
+                $flags .= '/notls/novalidate-cert/auth=LOGIN';
             }
 
             $mailbox = sprintf('{%s:%d%s}Sent', $host, $port, $flags);
-            $stream = @imap_open($mailbox, $username, $password);
+            $stream = @imap_open($mailbox, $username, $password, 0, 1);
 
             if (! $stream) {
                 return;
