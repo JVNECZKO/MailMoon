@@ -162,23 +162,26 @@ class CampaignSenderService
 
     private function createMessages(Campaign $campaign): void
     {
-        $records = [];
-
-        foreach ($campaign->contactList->contacts as $contact) {
-            $records[] = [
-                'user_id' => $campaign->user_id,
-                'campaign_id' => $campaign->id,
-                'contact_id' => $contact->id,
-                'to_email' => $contact->email,
-                'unsubscribe_token' => $campaign->enable_unsubscribe ? Str::uuid()->toString() : null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
-        }
-
-        if ($records) {
-            CampaignMessage::insert($records);
-        }
+        $now = now();
+        $campaign->contactList->contacts()
+            ->select('contacts.id', 'contacts.email')
+            ->chunk(500, function ($contacts) use ($campaign, $now) {
+                $records = [];
+                foreach ($contacts as $contact) {
+                    $records[] = [
+                        'user_id' => $campaign->user_id,
+                        'campaign_id' => $campaign->id,
+                        'contact_id' => $contact->id,
+                        'to_email' => $contact->email,
+                        'unsubscribe_token' => $campaign->enable_unsubscribe ? Str::uuid()->toString() : null,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+                if ($records) {
+                    CampaignMessage::insert($records);
+                }
+            });
     }
 
     private function buildTransport(SendingIdentity $identity): TransportInterface
