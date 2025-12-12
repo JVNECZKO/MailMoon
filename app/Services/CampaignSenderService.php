@@ -20,6 +20,11 @@ class CampaignSenderService
         $campaign->load(['contactList.contacts', 'sendingIdentity']);
         $identity = $campaign->sendingIdentity;
 
+        if ($campaign->status === 'paused') {
+            Log::info('Campaign paused - skipping send', ['campaign_id' => $campaign->id]);
+            return ['sent' => 0, 'failed' => 0, 'rescheduled' => true];
+        }
+
         Log::info('Campaign send started', [
             'campaign_id' => $campaign->id,
             'identity_id' => $identity?->id,

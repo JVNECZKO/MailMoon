@@ -20,6 +20,17 @@
                 @csrf
                 <button type="submit" class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-800">Wyślij ponownie</button>
             </form>
+            @if($campaign->status !== 'paused')
+            <form action="{{ route('campaigns.pause', $campaign) }}" method="POST">
+                @csrf
+                <button type="submit" class="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Pauzuj</button>
+            </form>
+            @else
+            <form action="{{ route('campaigns.resume', $campaign) }}" method="POST">
+                @csrf
+                <button type="submit" class="rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100">Wznów</button>
+            </form>
+            @endif
         </div>
     </div>
 

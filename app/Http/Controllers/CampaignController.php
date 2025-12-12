@@ -114,6 +114,25 @@ class CampaignController extends Controller
         return $this->sendCampaign($campaign);
     }
 
+    public function pause(Campaign $campaign): RedirectResponse
+    {
+        $this->authorize('update', $campaign);
+        $campaign->update(['status' => 'paused']);
+
+        return back()->with('status', 'Kampania wstrzymana.');
+    }
+
+    public function resume(Campaign $campaign): RedirectResponse
+    {
+        $this->authorize('update', $campaign);
+        $campaign->update([
+            'status' => 'scheduled',
+            'scheduled_at' => now(),
+        ]);
+
+        return back()->with('status', 'Kampania wznowiona – zostanie wysłana przez cron.');
+    }
+
     private function ensureUserOwnsResources(Request $request): void
     {
         $userId = $request->user()->id;
