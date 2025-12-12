@@ -44,7 +44,7 @@ class ImapTestService
                 'timeout'       => 10,
             ];
 
-            $client = new \Webklex\IMAP\Client($config);
+            $client = new \Webklex\PHPIMAP\Client($config);
             $client->connect();
 
             $folderName = $identity->imap_sent_folder ?? 'Sent';

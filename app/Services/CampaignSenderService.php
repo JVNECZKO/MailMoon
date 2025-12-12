@@ -369,7 +369,7 @@ class CampaignSenderService
             }
 
             // utwórz klienta ad-hoc, bez polegania na config/imap.php
-            $client = new \Webklex\IMAP\Client($accountConfig);
+            $client = new \Webklex\PHPIMAP\Client($accountConfig);
             $client->connect();
 
             $folderName = $identity->imap_sent_folder ?? 'Sent';
