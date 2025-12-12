@@ -145,14 +145,26 @@ class CampaignSenderService
                     'status' => 'scheduled',
                     'scheduled_at' => now()->addSeconds($delay),
                 ]);
+                $rescheduled = true;
                 break;
             }
         }
 
         $remaining = $campaign->messages()->whereNull('sent_at')->count();
         if ($remaining > 0) {
-            $campaign->update(['status' => 'sending']);
-            $rescheduled = true;
+            if ($respectDelay) {
+                // zostaw jako scheduled, żeby cron podjął kolejną sztukę o scheduled_at
+                if (! $campaign->wasChanged('scheduled_at')) {
+                    $campaign->update([
+                        'status' => 'scheduled',
+                        'scheduled_at' => now()->addSeconds($delayMin ?? 0),
+                    ]);
+                }
+                $rescheduled = true;
+            } else {
+                $campaign->update(['status' => 'sending']);
+                $rescheduled = true;
+            }
         } elseif (!$rescheduled) {
             $status = ($sent > 0) ? 'sent' : (($failed > 0) ? 'failed' : $campaign->status);
             $campaign->update(['status' => $status]);
