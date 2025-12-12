@@ -42,7 +42,7 @@ class ImapTestService
             } elseif ($encryption === 'ssl') {
                 $flags .= '/ssl/novalidate-cert/auth=LOGIN';
             } else {
-                $flags .= '/notls/novalidate-cert/auth=LOGIN';
+                $flags .= '/notls/auth=PLAIN';
             }
 
             $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $identity->imap_sent_folder ?? 'Sent');
