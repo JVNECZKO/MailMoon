@@ -8,10 +8,6 @@ class ImapTestService
 {
     public function appendTest(SendingIdentity $identity): bool|string
     {
-        if (! class_exists(\Webklex\IMAP\Client::class)) {
-            return 'Pakiet IMAP nie jest dostępny.';
-        }
-
         $host = $identity->imap_host ?? $identity->smtp_host;
         $port = $identity->imap_port ?? 993;
         $encryption = $identity->imap_encryption; // '', ssl, tls
@@ -20,6 +16,11 @@ class ImapTestService
 
         if (! $host || ! $username || ! $password) {
             return 'Brak konfiguracji IMAP (host/login/hasło).';
+        }
+
+        // domyśl do SSL jeśli pusto i port 993, inaczej TLS
+        if (!$encryption) {
+            $encryption = ((int)$port === 993) ? 'ssl' : 'tls';
         }
 
         // dostosuj port do szyfrowania
