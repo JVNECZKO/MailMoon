@@ -165,7 +165,7 @@ class CampaignSenderService
         $now = now();
         $campaign->contactList->contacts()
             ->select('contacts.id', 'contacts.email')
-            ->chunk(500, function ($contacts) use ($campaign, $now) {
+            ->chunk(100, function ($contacts) use ($campaign, $now) {
                 $records = [];
                 foreach ($contacts as $contact) {
                     $records[] = [
