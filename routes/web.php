@@ -61,7 +61,7 @@ Route::get('/cron/send-due', function (
 
     foreach ($due as $campaign) {
         try {
-            $summary[$campaign->id] = $senderService->send($campaign);
+            $summary[$campaign->id] = $senderService->send($campaign, 10);
         } catch (\Throwable $e) {
             $campaign->update(['status' => 'failed']);
             $summary[$campaign->id] = ['error' => $e->getMessage()];

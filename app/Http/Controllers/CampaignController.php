@@ -247,26 +247,15 @@ class CampaignController extends Controller
             return redirect()->back()->with('error', 'Aktywna tożsamość nadawcy jest wymagana do wysyłki.');
         }
 
-        $campaignId = $campaign->id;
-
-        dispatch(function () use ($campaignId) {
-            $campaign = Campaign::find($campaignId);
-            if (! $campaign) {
-                return;
-            }
-
-            try {
-                app(CampaignSenderService::class)->send($campaign);
-            } catch (\Throwable $e) {
-                $campaign->update(['status' => 'failed']);
-            }
-        })->afterResponse();
-
-        $campaign->update(['status' => 'sending', 'scheduled_at' => null]);
+        // oznacz jako scheduled; cron / artisan rozbije wysyłkę na małe batch'e, żeby nie timeoutować
+        $campaign->update([
+            'status' => 'scheduled',
+            'scheduled_at' => now(),
+        ]);
 
         return redirect()
             ->route('campaigns.show', $campaign)
-            ->with('status', 'Wysyłka rozpoczęta w tle, podgląd kampanii pokaże postęp.');
+            ->with('status', 'Wysyłka ruszy w tle (cron co minutę). Odśwież za chwilę podgląd kampanii.');
     }
 
     private function campaignStats(Campaign $campaign): array

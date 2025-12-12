@@ -15,7 +15,7 @@ use Symfony\Component\Mime\Email;
 
 class CampaignSenderService
 {
-    public function send(Campaign $campaign): array
+    public function send(Campaign $campaign, int $batchSize = 10): array
     {
         $campaign->load(['contactList.contacts', 'sendingIdentity']);
         $identity = $campaign->sendingIdentity;
@@ -59,7 +59,11 @@ class CampaignSenderService
         $failed = 0;
         $rescheduled = false;
 
-        $messages = $campaign->messages()->with('contact')->get();
+        $messages = $campaign->messages()
+            ->with('contact')
+            ->whereNull('sent_at')
+            ->limit($batchSize)
+            ->get();
         Log::info('Campaign messages loaded', [
             'campaign_id' => $campaign->id,
             'messages_total' => $messages->count(),
@@ -113,7 +117,11 @@ class CampaignSenderService
             }
         }
 
-        if (!$rescheduled) {
+        $remaining = $campaign->messages()->whereNull('sent_at')->count();
+        if ($remaining > 0) {
+            $campaign->update(['status' => 'sending']);
+            $rescheduled = true;
+        } elseif (!$rescheduled) {
             $status = ($sent > 0) ? 'sent' : 'failed';
             $campaign->update(['status' => $status]);
         }
