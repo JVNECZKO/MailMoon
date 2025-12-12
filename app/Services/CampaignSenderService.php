@@ -15,7 +15,7 @@ use Symfony\Component\Mime\Email;
 
 class CampaignSenderService
 {
-    public function send(Campaign $campaign, int $batchSize = 10): array
+    public function send(Campaign $campaign, int $batchSize = 10, bool $respectDelay = false): array
     {
         $campaign->load(['contactList.contacts', 'sendingIdentity']);
         $identity = $campaign->sendingIdentity;
@@ -131,7 +131,7 @@ class CampaignSenderService
             $max = max($min, (int) ($campaign->send_interval_max_seconds ?? $min));
             $delay = $min === $max ? $min : random_int($min, $max);
 
-            if ($delay > 0) {
+            if ($respectDelay && $delay > 0) {
                 sleep($delay);
             }
         }
@@ -141,7 +141,7 @@ class CampaignSenderService
             $campaign->update(['status' => 'sending']);
             $rescheduled = true;
         } elseif (!$rescheduled) {
-            $status = ($sent > 0) ? 'sent' : 'failed';
+            $status = ($sent > 0) ? 'sent' : (($failed > 0) ? 'failed' : $campaign->status);
             $campaign->update(['status' => $status]);
         }
 
