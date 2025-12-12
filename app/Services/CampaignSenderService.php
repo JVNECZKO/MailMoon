@@ -85,6 +85,11 @@ class CampaignSenderService
                     'message_id' => $message->id,
                     'error' => $e->getMessage(),
                 ]);
+
+                // jeśli serwer odmawia (np. limity), przerwij, by nie wyzerować sesji
+                if (str_contains($e->getMessage(), 'Too many') || str_contains($e->getMessage(), 'rate') || str_contains($e->getMessage(), 'AUTH')) {
+                    break;
+                }
             }
 
             $min = max(0, (int) $campaign->send_interval_seconds);
@@ -97,9 +102,8 @@ class CampaignSenderService
         }
 
         if (!$rescheduled) {
-            $campaign->update([
-                'status' => $failed === 0 ? 'sent' : 'failed',
-            ]);
+            $status = ($sent > 0) ? 'sent' : 'failed';
+            $campaign->update(['status' => $status]);
         }
 
         return [
@@ -335,6 +339,11 @@ class CampaignSenderService
             $password = $identity->imap_password ?? $identity->smtp_password;
 
             if (! $host || ! $username || ! $password) {
+                return;
+            }
+
+            // jeśli brak szyfrowania, pomijamy append aby uniknąć AUTH=PLAIN (ostrzeżenia bezpieczeństwa)
+            if (!in_array($encryption, ['tls', 'ssl'], true)) {
                 return;
             }
 
