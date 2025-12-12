@@ -32,7 +32,7 @@ class ImapTestService
         }
 
         try {
-            $config = [
+            $config = \Webklex\PHPIMAP\Config::make([
                 'host'          => $host,
                 'port'          => (int) $port,
                 'protocol'      => 'imap',
@@ -42,7 +42,7 @@ class ImapTestService
                 'password'      => $password,
                 'authentication'=> 'login',
                 'timeout'       => 10,
-            ];
+            ]);
 
             $client = new \Webklex\PHPIMAP\Client($config);
             $client->connect();

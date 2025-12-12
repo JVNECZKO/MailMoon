@@ -352,7 +352,7 @@ class CampaignSenderService
             }
 
             // zbuduj dynamiczną konfigurację pod bieżącą tożsamość
-            $accountConfig = [
+            $accountConfig = \Webklex\PHPIMAP\Config::make([
                 'host'          => $identity->imap_host ?: $identity->smtp_host,
                 'port'          => (int) ($identity->imap_port ?: ($identity->imap_encryption === 'tls' ? 143 : 993)),
                 'protocol'      => 'imap',
@@ -362,7 +362,7 @@ class CampaignSenderService
                 'password'      => $identity->imap_password ?: $identity->smtp_password,
                 'authentication'=> 'login',
                 'timeout'       => 10,
-            ];
+            ]);
 
             if (! $accountConfig['host'] || ! $accountConfig['username'] || ! $accountConfig['password']) {
                 return;
