@@ -367,6 +367,14 @@ class CampaignSenderService
                 return;
             }
 
+            // dostosuj port do szyfrowania
+            if ($encryption === 'ssl' && (int) $port === 143) {
+                $port = 993;
+            }
+            if ($encryption === 'tls' && (int) $port === 993) {
+                $port = 143;
+            }
+
             $flags = '/imap';
             if ($encryption === 'tls') {
                 $flags .= '/tls/novalidate-cert/auth=LOGIN';
