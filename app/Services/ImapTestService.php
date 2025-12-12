@@ -8,8 +8,8 @@ class ImapTestService
 {
     public function appendTest(SendingIdentity $identity): bool|string
     {
-        if (! function_exists('imap_open')) {
-            return 'Funkcja IMAP nie jest dostępna (brak rozszerzenia).';
+        if (! class_exists(\Webklex\IMAP\Client::class)) {
+            return 'Pakiet IMAP nie jest dostępny.';
         }
 
         $host = $identity->imap_host ?? $identity->smtp_host;
@@ -30,36 +30,41 @@ class ImapTestService
             $port = 143;
         }
 
-        $flags = '/imap';
-        if ($encryption === 'tls') {
-            $flags .= '/tls/novalidate-cert/auth=LOGIN';
-        } elseif ($encryption === 'ssl') {
-            $flags .= '/ssl/novalidate-cert/auth=LOGIN';
-        } else {
-            $flags .= '/notls/novalidate-cert/auth=LOGIN';
+        try {
+            $config = [
+                'host'          => $host,
+                'port'          => (int) $port,
+                'protocol'      => 'imap',
+                'encryption'    => $encryption ?: 'ssl',
+                'validate_cert' => false,
+                'username'      => $username,
+                'password'      => $password,
+                'authentication'=> 'login',
+                'timeout'       => 10,
+            ];
+
+            $client = new \Webklex\IMAP\Client($config);
+            $client->connect();
+
+            $folderName = $identity->imap_sent_folder ?? 'Sent';
+            $folder = $client->getFolder($folderName) ?: $client->getFolder('INBOX.Sent');
+
+            if (! $folder) {
+                return 'Nie znaleziono folderu „Sent”.';
+            }
+
+            $dummyMessage = "From: {$identity->from_email}\r\n"
+                . "To: {$identity->from_email}\r\n"
+                . "Subject: MailMoon IMAP test\r\n"
+                . "\r\n"
+                . "Test append to Sent folder.";
+
+            $folder->appendMessage($dummyMessage);
+            $client->disconnect();
+
+            return true;
+        } catch (\Throwable $e) {
+            return 'IMAP błąd: ' . $e->getMessage();
         }
-
-        $mailbox = sprintf('{%s:%d%s}Sent', $host, $port, $flags);
-
-        $stream = @imap_open($mailbox, $username, $password, 0, 1);
-
-        if (! $stream) {
-            return 'Nie można połączyć z IMAP: ' . (imap_last_error() ?: 'brak szczegółów');
-        }
-
-        $dummyMessage = "From: {$identity->from_email}\r\n"
-            . "To: {$identity->from_email}\r\n"
-            . "Subject: MailMoon IMAP test\r\n"
-            . "\r\n"
-            . "Test append to Sent folder.";
-
-        $ok = @imap_append($stream, $mailbox, $dummyMessage);
-        @imap_close($stream);
-
-        if (! $ok) {
-            return 'IMAP append nie powiódł się: ' . (imap_last_error() ?: 'brak szczegółów');
-        }
-
-        return true;
     }
 }
