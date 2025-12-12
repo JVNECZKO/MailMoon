@@ -22,9 +22,9 @@ class ImapTestService
             return 'Brak konfiguracji IMAP (host/login/hasło).';
         }
 
-        // domyśl do SSL jeśli pusto i port 993, inaczej TLS
+        // domyśl do plain/notls gdy brak
         if (!$encryption) {
-            $encryption = ((int)$port === 993) ? 'ssl' : 'tls';
+            $encryption = 'none';
         }
 
         // dostosuj port do szyfrowania
@@ -41,7 +41,7 @@ class ImapTestService
                 $flags .= '/tls/novalidate-cert/auth=LOGIN';
             } elseif ($encryption === 'ssl') {
                 $flags .= '/ssl/novalidate-cert/auth=LOGIN';
-            } else {
+            } else { // none / plain
                 $flags .= '/notls/auth=PLAIN';
             }
 

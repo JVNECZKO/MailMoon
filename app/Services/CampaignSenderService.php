@@ -362,7 +362,7 @@ class CampaignSenderService
             }
 
             if (! $encryption) {
-                $encryption = ((int)$port === 993) ? 'ssl' : 'tls';
+                $encryption = 'none';
             }
 
             if ($encryption === 'ssl' && (int) $port === 143) {
@@ -377,7 +377,7 @@ class CampaignSenderService
                 $flags .= '/tls/novalidate-cert/auth=LOGIN';
             } elseif ($encryption === 'ssl') {
                 $flags .= '/ssl/novalidate-cert/auth=LOGIN';
-            } else {
+            } else { // none / plain
                 $flags .= '/notls/auth=PLAIN';
             }
 
