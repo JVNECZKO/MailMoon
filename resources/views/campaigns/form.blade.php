@@ -179,7 +179,7 @@
             <button type="button" data-close-subject class="text-slate-500 hover:text-slate-700 text-sm">Zamknij</button>
         </div>
         <p class="text-sm text-slate-600 mt-1">Dodaj kilka tematów — system wylosuje jeden dla każdego maila.</p>
-        <div id="subject-variants" class="mt-4 space-y-3">
+        <div id="subject-variants" class="mt-4 space-y-3 max-h-96 overflow-y-auto pr-1">
             @foreach($extraSubjects as $idx => $subject)
                 <input type="text" name="extra_subjects[]" value="{{ $subject }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Temat #{{ $idx + 1 }}">
             @endforeach
@@ -198,7 +198,7 @@
             <button type="button" data-close-content class="text-slate-500 hover:text-slate-700 text-sm">Zamknij</button>
         </div>
         <p class="text-sm text-slate-600 mt-1">Możesz wprowadzić prosty HTML lub tekst. Losujemy jedną treść dla każdego odbiorcy.</p>
-        <div id="content-variants" class="mt-4 space-y-3">
+        <div id="content-variants" class="mt-4 space-y-3 max-h-[500px] overflow-y-auto pr-1">
             @foreach($extraContents as $idx => $content)
                 <textarea name="extra_contents[]" rows="3" class="tinymce-editor w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Treść #{{ $idx + 1 }}">{{ $content }}</textarea>
             @endforeach
