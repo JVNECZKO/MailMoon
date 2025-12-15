@@ -38,6 +38,21 @@
                 </option>
             @endforeach
         </select>
+        <p class="text-xs text-slate-500 mt-1">Główna tożsamość (używana, jeśli nie wybierzesz multi).</p>
+    </div>
+    <div>
+        <label class="block text-sm font-medium text-slate-700">Wiele tożsamości (rotacja)</label>
+        @php
+            $selectedMulti = old('sending_identity_ids', $campaign->sendingIdentities?->pluck('id')->toArray() ?? []);
+        @endphp
+        <select name="sending_identity_ids[]" multiple class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500">
+            @foreach ($sendingIdentities as $identity)
+                <option value="{{ $identity->id }}" @selected(in_array($identity->id, $selectedMulti))>
+                    {{ $identity->name }} ({{ $identity->from_email }})
+                </option>
+            @endforeach
+        </select>
+        <p class="text-xs text-slate-500 mt-1">Jeśli wybierzesz kilka, kampania będzie wysyłana rotacyjnie, bez powtórek aż do przejścia przez całą listę.</p>
     </div>
     <div>
         <label class="block text-sm font-medium text-slate-700">Lista kontaktów</label>

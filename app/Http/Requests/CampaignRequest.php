@@ -26,6 +26,8 @@ class CampaignRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'sending_identity_id' => ['required', 'exists:sending_identities,id'],
             'contact_list_id' => ['required', 'exists:contact_lists,id'],
+            'sending_identity_ids' => ['sometimes', 'array'],
+            'sending_identity_ids.*' => ['exists:sending_identities,id'],
             'template_id' => ['nullable', 'exists:templates,id'],
             'subject' => ['required', 'string', 'max:255'],
             'reply_to' => ['nullable', 'email'],

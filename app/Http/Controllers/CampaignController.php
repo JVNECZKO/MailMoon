@@ -69,6 +69,7 @@ class CampaignController extends Controller
 
         $data = $this->prepareData($request);
         $campaign = $request->user()->campaigns()->create($data);
+        $this->syncIdentities($campaign, $request);
 
         return $this->handleAction($request, $campaign, 'zapisana');
     }
@@ -96,6 +97,7 @@ class CampaignController extends Controller
         $this->ensureUserOwnsResources($request);
 
         $campaign->update($this->prepareData($request));
+        $this->syncIdentities($campaign, $request);
 
         return $this->handleAction($request, $campaign, 'zaktualizowana');
     }
@@ -141,6 +143,12 @@ class CampaignController extends Controller
             SendingIdentity::where('user_id', $userId)->where('id', $request->input('sending_identity_id'))->exists(),
             403
         );
+
+        $multiIds = $request->input('sending_identity_ids', []);
+        if (!empty($multiIds)) {
+            $count = SendingIdentity::where('user_id', $userId)->whereIn('id', $multiIds)->count();
+            abort_unless($count === count($multiIds), 403);
+        }
 
         abort_unless(
             ContactList::where('user_id', $userId)->where('id', $request->input('contact_list_id'))->exists(),
@@ -195,6 +203,8 @@ class CampaignController extends Controller
         $data['sending_window_start'] = $request->input('sending_window_start') ?: null;
         $data['sending_window_end'] = $request->input('sending_window_end') ?: null;
         $data['sending_window_schedule'] = $this->cleanSchedule($schedule);
+        $data['identity_rotation'] = null;
+        $data['identity_rotation_index'] = 0;
 
         return $data;
     }
@@ -306,5 +316,17 @@ class CampaignController extends Controller
             'click_rate' => $clickRate,
             'unsubscribe_rate' => $unsubscribeRate,
         ];
+    }
+
+    private function syncIdentities(Campaign $campaign, Request $request): void
+    {
+        $ids = array_filter((array) $request->input('sending_identity_ids', []));
+        if (!empty($ids)) {
+            // ustaw główną na pierwszą wybraną
+            $campaign->update(['sending_identity_id' => $ids[0]]);
+            $campaign->sendingIdentities()->sync($ids);
+        } else {
+            $campaign->sendingIdentities()->sync([]);
+        }
     }
 }

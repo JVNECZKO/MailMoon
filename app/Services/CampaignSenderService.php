@@ -17,7 +17,7 @@ class CampaignSenderService
 {
     public function send(Campaign $campaign, int $batchSize = 10, bool $respectDelay = false): array
     {
-        $campaign->load(['contactList.contacts', 'sendingIdentity']);
+        $campaign->load(['contactList.contacts', 'sendingIdentity', 'sendingIdentities']);
         $identity = $campaign->sendingIdentity;
 
         if ($campaign->status === 'paused') {
@@ -61,10 +61,28 @@ class CampaignSenderService
             'scheduled_at' => null,
         ]);
 
-        $transport = $this->buildTransport($identity);
         $sent = 0;
         $failed = 0;
         $rescheduled = false;
+
+        $identityList = $campaign->sendingIdentities;
+        if ($identityList->isEmpty() && $identity) {
+            $identityList = collect([$identity]);
+        }
+        if ($identityList->isEmpty()) {
+            $campaign->update(['status' => 'failed']);
+            Log::error('Campaign send failed: no identities', ['campaign_id' => $campaign->id]);
+            return ['sent' => 0, 'failed' => 0, 'rescheduled' => false];
+        }
+
+        $transports = [];
+        $identityMap = [];
+        foreach ($identityList as $idn) {
+            $transports[$idn->id] = $this->buildTransport($idn);
+            $identityMap[$idn->id] = $idn;
+        }
+
+        [$rotation, $index] = $this->prepareRotation($campaign, $identityList->pluck('id')->toArray());
 
         $unsentTotal = $campaign->messages()->whereNull('sent_at')->count();
         $messages = $campaign->messages()
@@ -98,6 +116,10 @@ class CampaignSenderService
 
         foreach ($messages as $message) {
             try {
+                [$identityId, $rotation, $index] = $this->nextIdentity($rotation, $index, $identityMap);
+                $currentIdentity = $identityMap[$identityId] ?? $identity;
+                $transport = $transports[$identityId] ?? $this->buildTransport($currentIdentity);
+
                 $windowStatus = $this->waitForWindow($campaign);
 
                 if ($windowStatus instanceof \DateTimeInterface) {
@@ -112,7 +134,7 @@ class CampaignSenderService
                 $subject = $this->pickSubject($campaign);
                 $baseHtml = $this->pickContent($campaign);
                 $html = $this->prepareHtml($campaign, $message, $baseHtml);
-                $sentMessage = $this->sendEmail($transport, $campaign, $message, $subject, $html);
+                $sentMessage = $this->sendEmail($transport, $campaign, $message, $subject, $html, $currentIdentity);
 
                 $message->update([
                     'sent_at' => now(),
@@ -149,6 +171,12 @@ class CampaignSenderService
                 break;
             }
         }
+
+        // zapisz rotację
+        $campaign->update([
+            'identity_rotation' => $rotation,
+            'identity_rotation_index' => $index,
+        ]);
 
         $remaining = $campaign->messages()->whereNull('sent_at')->count();
         if ($remaining > 0) {
@@ -223,9 +251,9 @@ class CampaignSenderService
         return $transport;
     }
 
-    private function sendEmail(TransportInterface $transport, Campaign $campaign, CampaignMessage $message, string $subject, string $html): ?SentMessage
+    private function sendEmail(TransportInterface $transport, Campaign $campaign, CampaignMessage $message, string $subject, string $html, ?SendingIdentity $identityOverride = null): ?SentMessage
     {
-        $identity = $campaign->sendingIdentity;
+        $identity = $identityOverride ?? $campaign->sendingIdentity;
 
         $email = (new Email())
             ->from(new Address($identity->from_email, $identity->name))
@@ -466,3 +494,46 @@ class CampaignSenderService
         }
     }
 }
+    private function prepareRotation(Campaign $campaign, array $identityIds): array
+    {
+        $stored = $campaign->identity_rotation ?? [];
+        $index = (int) $campaign->identity_rotation_index;
+
+        // jeśli brak lub niezgodny zestaw — potasuj na nowo
+        sort($stored);
+        $sortedIds = $identityIds;
+        sort($sortedIds);
+        if (empty($stored) || $stored !== $sortedIds) {
+            $rotation = $identityIds;
+            shuffle($rotation);
+            return [$rotation, 0];
+        }
+
+        // użyj istniejącej rotacji
+        $rotation = $campaign->identity_rotation ?? $identityIds;
+        if ($index >= count($rotation)) {
+            shuffle($rotation);
+            $index = 0;
+        }
+
+        return [$rotation, $index];
+    }
+
+    private function nextIdentity(array $rotation, int $index, array $identityMap): array
+    {
+        if (empty($rotation)) {
+            $rotation = array_keys($identityMap);
+            shuffle($rotation);
+            $index = 0;
+        }
+
+        $identityId = $rotation[$index] ?? $rotation[0];
+        $index++;
+
+        if ($index >= count($rotation)) {
+            shuffle($rotation);
+            $index = 0;
+        }
+
+        return [$identityId, $rotation, $index];
+    }

@@ -43,7 +43,14 @@
                 </div>
                 <div class="text-sm text-slate-600 text-right">
                     <p>Lista: <span class="font-semibold">{{ $campaign->contactList?->name ?? '—' }}</span></p>
-                    <p>Tożsamość: <span class="font-semibold">{{ $campaign->sendingIdentity?->name ?? '—' }}</span></p>
+                    <p>Tożsamość: <span class="font-semibold">
+                        @php $multi = $campaign->sendingIdentities; @endphp
+                        @if($multi && $multi->count() > 0)
+                            {{ $multi->pluck('name')->join(', ') }}
+                        @else
+                            {{ $campaign->sendingIdentity?->name ?? '—' }}
+                        @endif
+                    </span></p>
                 </div>
             </div>
 

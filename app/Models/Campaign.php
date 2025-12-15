@@ -22,6 +22,8 @@ class Campaign extends Model
         'name',
         'subject',
         'reply_to',
+        'identity_rotation',
+        'identity_rotation_index',
         'extra_subjects',
         'html_content',
         'extra_contents',
@@ -51,11 +53,18 @@ class Campaign extends Model
         'sending_window_schedule' => 'array',
         'extra_subjects' => 'array',
         'extra_contents' => 'array',
+        'identity_rotation' => 'array',
+        'identity_rotation_index' => 'integer',
     ];
 
     public function sendingIdentity(): BelongsTo
     {
         return $this->belongsTo(SendingIdentity::class);
+    }
+
+    public function sendingIdentities()
+    {
+        return $this->belongsToMany(SendingIdentity::class, 'campaign_sending_identity')->withTimestamps();
     }
 
     public function contactList(): BelongsTo
