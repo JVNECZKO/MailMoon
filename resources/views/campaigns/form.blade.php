@@ -45,13 +45,16 @@
         @php
             $selectedMulti = old('sending_identity_ids', $campaign->sendingIdentities?->pluck('id')->toArray() ?? []);
         @endphp
-        <select name="sending_identity_ids[]" multiple class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500">
-            @foreach ($sendingIdentities as $identity)
-                <option value="{{ $identity->id }}" @selected(in_array($identity->id, $selectedMulti))>
-                    {{ $identity->name }} ({{ $identity->from_email }})
-                </option>
+        <div class="mt-2 grid gap-2 sm:grid-cols-2">
+            @foreach($sendingIdentities as $identity)
+                <label class="flex items-center space-x-2 text-sm text-slate-700">
+                    <input type="checkbox" name="sending_identity_ids[]" value="{{ $identity->id }}"
+                           class="rounded border-slate-300 text-blue-700 focus:ring-blue-500"
+                           @checked(in_array($identity->id, $selectedMulti))>
+                    <span>{{ $identity->name }} ({{ $identity->from_email }})</span>
+                </label>
             @endforeach
-        </select>
+        </div>
         <p class="text-xs text-slate-500 mt-1">Jeśli wybierzesz kilka, kampania będzie wysyłana rotacyjnie, bez powtórek aż do przejścia przez całą listę.</p>
     </div>
     <div>
