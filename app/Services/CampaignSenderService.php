@@ -537,3 +537,5 @@ class CampaignSenderService
 
         return [$identityId, $rotation, $index];
     }
+
+}
