@@ -493,7 +493,7 @@ class CampaignSenderService
             ]);
         }
     }
-}
+
     private function prepareRotation(Campaign $campaign, array $identityIds): array
     {
         $stored = $campaign->identity_rotation ?? [];
