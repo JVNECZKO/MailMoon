@@ -183,6 +183,7 @@ class CampaignController extends Controller
         $data['track_opens'] = $request->boolean('track_opens');
         $data['track_clicks'] = $request->boolean('track_clicks');
         $data['enable_unsubscribe'] = $request->boolean('enable_unsubscribe');
+        $data['reply_to'] = $request->input('reply_to') ?: null;
         $data['send_interval_seconds'] = (int) $request->input('send_interval_seconds', 1);
         $data['send_interval_max_seconds'] = (int) $request->input('send_interval_max_seconds', $data['send_interval_seconds']);
         $data['scheduled_at'] = $request->input('scheduled_at') ?: null;

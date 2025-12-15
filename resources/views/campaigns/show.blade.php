@@ -85,6 +85,7 @@
                         <li>Otwarcia: {{ $campaign->track_opens ? 'włączone' : 'wyłączone' }}</li>
                         <li>Kliknięcia: {{ $campaign->track_clicks ? 'włączone' : 'wyłączone' }}</li>
                         <li>Link wypisu: {{ $campaign->enable_unsubscribe ? 'włączony' : 'wyłączony' }}</li>
+                        <li>Reply-To: {{ $campaign->reply_to ?: 'domyślne (nadawca)' }}</li>
                     </ul>
                 </div>
                 <div class="rounded-lg border border-slate-100 bg-slate-50 p-4">

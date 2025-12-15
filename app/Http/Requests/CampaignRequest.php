@@ -28,6 +28,7 @@ class CampaignRequest extends FormRequest
             'contact_list_id' => ['required', 'exists:contact_lists,id'],
             'template_id' => ['nullable', 'exists:templates,id'],
             'subject' => ['required', 'string', 'max:255'],
+            'reply_to' => ['nullable', 'email'],
             'extra_subjects' => ['sometimes', 'array'],
             'extra_subjects.*' => ['nullable', 'string', 'max:255'],
             'html_content' => ['required', 'string'],

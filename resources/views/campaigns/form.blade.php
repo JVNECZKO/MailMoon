@@ -24,6 +24,11 @@
         @endif
     </div>
     <div>
+        <label class="block text-sm font-medium text-slate-700">Reply-To (opcjonalnie)</label>
+        <input type="email" name="reply_to" value="{{ old('reply_to', $campaign->reply_to ?? '') }}" class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="np. odpowiedzi@twojadomena.pl">
+        <p class="text-xs text-slate-500 mt-1">Adres odpowiedzi dla tej kampanii (nadpisuje domyślne Reply-To).</p>
+    </div>
+    <div>
         <label class="block text-sm font-medium text-slate-700">Tożsamość nadawcy</label>
         <select name="sending_identity_id" class="mt-1 w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" required>
             <option value="">Wybierz...</option>

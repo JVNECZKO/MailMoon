@@ -233,6 +233,10 @@ class CampaignSenderService
             ->subject($subject)
             ->html($html);
 
+        if ($campaign->reply_to) {
+            $email->replyTo($campaign->reply_to);
+        }
+
         $sentMessage = $transport->send($email);
 
         if ($identity->send_mode === 'imap') {

@@ -21,6 +21,7 @@ class Campaign extends Model
         'template_id',
         'name',
         'subject',
+        'reply_to',
         'extra_subjects',
         'html_content',
         'extra_contents',
