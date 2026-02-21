@@ -468,12 +468,7 @@ class CampaignSenderService
                 $flags .= '/notls/novalidate-cert';
             }
 
-            $folders = [
-                $identity->imap_sent_folder ?: 'Sent',
-                'INBOX.Sent',
-                'Sent',
-                'INBOX/Sent',
-            ];
+            $folders = $this->imapFolderCandidates($identity->imap_sent_folder ?? null);
 
             foreach ($folders as $folder) {
                 $mailbox = sprintf('{%s:%d%s}%s', $host, (int) $port, $flags, $folder);
@@ -536,6 +531,21 @@ class CampaignSenderService
         }
 
         return [$identityId, $rotation, $index];
+    }
+
+    private function imapFolderCandidates(?string $configuredFolder): array
+    {
+        $candidates = [];
+
+        $folder = trim((string) $configuredFolder);
+        if ($folder !== '') {
+            $candidates[] = str_replace('/', '.', $folder);
+        }
+
+        $candidates[] = 'Sent';
+        $candidates[] = 'INBOX.Sent';
+
+        return array_values(array_unique(array_filter($candidates)));
     }
 
 }

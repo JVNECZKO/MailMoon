@@ -45,12 +45,7 @@ class ImapTestService
                 $flags .= '/notls/novalidate-cert';
             }
 
-            $folders = [
-                $identity->imap_sent_folder ?: 'Sent',
-                'INBOX.Sent',
-                'Sent',
-                'INBOX/Sent',
-            ];
+            $folders = $this->imapFolderCandidates($identity->imap_sent_folder ?? null);
 
             $lastError = null;
             foreach ($folders as $folder) {
@@ -82,5 +77,21 @@ class ImapTestService
         } catch (\Throwable $e) {
             return 'IMAP błąd: ' . $e->getMessage();
         }
+    }
+
+    private function imapFolderCandidates(?string $configuredFolder): array
+    {
+        $candidates = [];
+
+        $folder = trim((string) $configuredFolder);
+        if ($folder !== '') {
+            // Serwery często używają separatora "." i odrzucają "/".
+            $candidates[] = str_replace('/', '.', $folder);
+        }
+
+        $candidates[] = 'Sent';
+        $candidates[] = 'INBOX.Sent';
+
+        return array_values(array_unique(array_filter($candidates)));
     }
 }
