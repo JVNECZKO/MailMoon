@@ -7,14 +7,19 @@
                     return;
                 }
 
-                window.initTinyEditors = function () {
-                    document.querySelectorAll('textarea.tinymce-editor').forEach((el) => {
+                window.initTinyEditors = function (root = document, options = {}) {
+                    const force = !!options.force;
+                    root.querySelectorAll('textarea.tinymce-editor').forEach((el) => {
                         if (el.dataset.tinyInit === '1') {
                             return;
                         }
+                        if (!force && el.dataset.deferTiny === '1') {
+                            return;
+                        }
+                        const configuredHeight = parseInt(el.dataset.tinyHeight || '420', 10);
                         tinymce.init({
                             target: el,
-                            height: 420,
+                            height: Number.isNaN(configuredHeight) ? 420 : configuredHeight,
                             menubar: false,
                             plugins: 'link lists table code autoresize',
                             toolbar: 'undo redo | styles | bold italic underline | alignleft aligncenter alignright | bullist numlist | link table | code',

@@ -190,38 +190,48 @@
 </div>
 
 {{-- Modale zarządzania wariantami --}}
-<div id="subject-modal" class="fixed inset-0 bg-black/40 z-40 hidden">
-    <div class="mx-auto mt-16 max-w-2xl rounded-xl bg-white p-6 shadow-lg">
-        <div class="flex items-center justify-between">
+<div id="subject-modal" class="fixed inset-0 z-40 hidden overflow-y-auto bg-black/40 p-4 md:p-8">
+    <div class="mx-auto flex w-full max-w-3xl max-h-[90vh] flex-col rounded-xl bg-white p-6 shadow-lg">
+        <div class="flex items-center justify-between shrink-0">
             <h3 class="text-lg font-semibold text-slate-900">Dodatkowe tematy</h3>
             <button type="button" data-close-subject class="text-slate-500 hover:text-slate-700 text-sm">Zamknij</button>
         </div>
-        <p class="text-sm text-slate-600 mt-1">Dodaj kilka tematów — system wylosuje jeden dla każdego maila.</p>
-        <div id="subject-variants" class="mt-4 space-y-3 max-h-96 overflow-y-auto pr-1">
+        <p class="text-sm text-slate-600 mt-1 shrink-0">Dodaj kilka tematów — system wylosuje jeden dla każdego maila.</p>
+        <div id="subject-variants" class="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
             @foreach($extraSubjects as $idx => $subject)
-                <input type="text" name="extra_subjects[]" value="{{ $subject }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Temat #{{ $idx + 1 }}">
+                <details class="subject-item rounded-lg border border-slate-200 bg-slate-50" @if($loop->first) open @endif>
+                    <summary class="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-slate-700">Temat #{{ $idx + 1 }}</summary>
+                    <div class="border-t border-slate-200 p-3">
+                        <input type="text" name="extra_subjects[]" value="{{ $subject }}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Temat #{{ $idx + 1 }}">
+                    </div>
+                </details>
             @endforeach
         </div>
-        <div class="mt-4 flex items-center justify-between">
+        <div class="mt-4 flex items-center justify-between shrink-0">
             <button type="button" id="add-subject-variant" class="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">+ Dodaj temat</button>
             <button type="button" data-close-subject class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-800">Gotowe</button>
         </div>
     </div>
 </div>
 
-<div id="content-modal" class="fixed inset-0 bg-black/40 z-40 hidden">
-    <div class="mx-auto mt-16 max-w-3xl rounded-xl bg-white p-6 shadow-lg">
-        <div class="flex items-center justify-between">
+<div id="content-modal" class="fixed inset-0 z-40 hidden overflow-y-auto bg-black/40 p-4 md:p-8">
+    <div class="mx-auto flex w-full max-w-4xl max-h-[90vh] flex-col rounded-xl bg-white p-6 shadow-lg">
+        <div class="flex items-center justify-between shrink-0">
             <h3 class="text-lg font-semibold text-slate-900">Dodatkowe treści</h3>
             <button type="button" data-close-content class="text-slate-500 hover:text-slate-700 text-sm">Zamknij</button>
         </div>
-        <p class="text-sm text-slate-600 mt-1">Możesz wprowadzić prosty HTML lub tekst. Losujemy jedną treść dla każdego odbiorcy.</p>
-        <div id="content-variants" class="mt-4 space-y-3 max-h-[500px] overflow-y-auto pr-1">
+        <p class="text-sm text-slate-600 mt-1 shrink-0">Możesz wprowadzić prosty HTML lub tekst. Losujemy jedną treść dla każdego odbiorcy.</p>
+        <div id="content-variants" class="mt-4 flex-1 space-y-3 overflow-y-auto pr-1">
             @foreach($extraContents as $idx => $content)
-                <textarea name="extra_contents[]" rows="3" class="tinymce-editor w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" placeholder="Treść #{{ $idx + 1 }}">{{ $content }}</textarea>
+                <details class="content-item rounded-lg border border-slate-200 bg-slate-50" @if($loop->first) open @endif>
+                    <summary class="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-slate-700">Treść #{{ $idx + 1 }}</summary>
+                    <div class="variant-body border-t border-slate-200 p-3">
+                        <textarea name="extra_contents[]" rows="5" class="tinymce-editor w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" data-defer-tiny="1" data-tiny-height="260" placeholder="Treść #{{ $idx + 1 }}">{{ $content }}</textarea>
+                    </div>
+                </details>
             @endforeach
         </div>
-        <div class="mt-4 flex items-center justify-between">
+        <div class="mt-4 flex items-center justify-between shrink-0">
             <button type="button" id="add-content-variant" class="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">+ Dodaj treść</button>
             <button type="button" data-close-content class="rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-800">Gotowe</button>
         </div>
@@ -248,12 +258,18 @@
                     btn.addEventListener('click', () => modalToggle('subject-modal', false));
                 });
                 addSubject?.addEventListener('click', () => {
-                    const input = document.createElement('input');
-                    input.type = 'text';
-                    input.name = 'extra_subjects[]';
-                    input.placeholder = `Temat #${(subjectWrap?.children.length || 0) + 1}`;
-                    input.className = 'w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500';
-                    subjectWrap?.appendChild(input);
+                    const number = (subjectWrap?.querySelectorAll('.subject-item').length || 0) + 1;
+                    const item = document.createElement('details');
+                    item.className = 'subject-item rounded-lg border border-slate-200 bg-slate-50';
+                    item.open = true;
+                    item.innerHTML = `
+                        <summary class="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-slate-700">Temat #${number}</summary>
+                        <div class="border-t border-slate-200 p-3">
+                            <input type="text" name="extra_subjects[]" placeholder="Temat #${number}" class="w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500">
+                        </div>
+                    `;
+                    subjectWrap?.appendChild(item);
+                    item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                 });
 
                 // Treści
@@ -266,27 +282,40 @@
                     btn.addEventListener('click', () => modalToggle('content-modal', false));
                 });
                 addContent?.addEventListener('click', () => {
-                    const area = document.createElement('textarea');
-                    area.name = 'extra_contents[]';
-                    area.rows = 3;
-                    area.placeholder = `Treść #${(contentWrap?.children.length || 0) + 1}`;
-                    area.className = 'tinymce-editor w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500';
-                    contentWrap?.appendChild(area);
-                    if (typeof window.initTinyEditors === 'function') {
-                        setTimeout(() => window.initTinyEditors(), 0);
-                    }
+                    const number = (contentWrap?.querySelectorAll('.content-item').length || 0) + 1;
+                    const item = document.createElement('details');
+                    item.className = 'content-item rounded-lg border border-slate-200 bg-slate-50';
+                    item.open = true;
+                    item.innerHTML = `
+                        <summary class="cursor-pointer select-none px-3 py-2 text-sm font-semibold text-slate-700">Treść #${number}</summary>
+                        <div class="variant-body border-t border-slate-200 p-3">
+                            <textarea name="extra_contents[]" rows="5" placeholder="Treść #${number}" class="tinymce-editor w-full rounded-md border-slate-300 shadow-sm focus:border-blue-600 focus:ring-blue-500" data-defer-tiny="1" data-tiny-height="260"></textarea>
+                        </div>
+                    `;
+                    contentWrap?.appendChild(item);
+                    bindContentAccordion(item);
+                    initTinyForOpenedContent(item);
+                    item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                 });
 
-                // zainicjuj TinyMCE dla istniejących pól wariantów po otwarciu modala
-                openContent?.addEventListener('click', () => {
-                    if (typeof window.initTinyEditors === 'function') {
-                        setTimeout(() => window.initTinyEditors(), 0);
-                    }
+                const initTinyForOpenedContent = (detailsEl) => {
+                    if (!detailsEl?.open) return;
+                    const body = detailsEl.querySelector('.variant-body');
+                    if (!body || typeof window.initTinyEditors !== 'function') return;
+                    setTimeout(() => window.initTinyEditors(body, { force: true }), 0);
+                };
+
+                const bindContentAccordion = (detailsEl) => {
+                    detailsEl.addEventListener('toggle', () => initTinyForOpenedContent(detailsEl));
+                };
+
+                contentWrap?.querySelectorAll('.content-item').forEach((item) => {
+                    bindContentAccordion(item);
+                    initTinyForOpenedContent(item);
                 });
-                openSubject?.addEventListener('click', () => {
-                    if (typeof window.initTinyEditors === 'function') {
-                        setTimeout(() => window.initTinyEditors(), 0);
-                    }
+
+                openContent?.addEventListener('click', () => {
+                    contentWrap?.querySelectorAll('.content-item').forEach((item) => initTinyForOpenedContent(item));
                 });
             });
         </script>
